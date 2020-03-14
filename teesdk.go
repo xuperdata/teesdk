@@ -1,7 +1,7 @@
 package teesdk
 
 /*
-#cgo CFLAGS: -I .
+#cgo CFLAGS: -I${SRCDIR} 
 #cgo LDFLAGS: -L ${SRCDIR}/lib -lmesatee_sdk_c -Wl,-rpath=${SRCDIR}/lib
 
 #include "mesatee/mesatee.h"
@@ -100,6 +100,7 @@ import "C"
 import (
 	"unsafe"
 	"errors"
+	"sync"
 )
 
 type TEEClient struct {
@@ -115,21 +116,24 @@ type TEEClient struct {
 
 // env_logger can be init once, so single instance patten is adapted
 var kInstance *TEEClient
+var once sync.Once
 func NewTEEClient(uid, token, pd, ss, eic string, tmsport, tdfsport int32) *TEEClient {
 	if kInstance != nil {
 		return kInstance;
 	}
-	kInstance := &TEEClient{
-            Uid:                C.CString(uid),
-	    Token:              C.CString(token),
-	    PublicDer:          C.CString(pd),
-	    SignSha256:         C.CString(ss),
-	    EnclaveInfoConfig:  C.CString(eic),
-	    TMSPort:		C.int32_t(tmsport),
-	    TDFSPort:		C.int32_t(tdfsport),
-	}
-	s := kInstance
-        C.init(s.PublicDer, s.SignSha256, s.EnclaveInfoConfig, s.TMSPort, s.TDFSPort)
+	once.Do(func() {
+		kInstance = &TEEClient{
+		    Uid:                C.CString(uid),
+		    Token:              C.CString(token),
+		    PublicDer:          C.CString(pd),
+		    SignSha256:         C.CString(ss),
+		    EnclaveInfoConfig:  C.CString(eic),
+		    TMSPort:		C.int32_t(tmsport),
+		    TDFSPort:		C.int32_t(tdfsport),
+		}
+		s := kInstance
+		C.init(s.PublicDer, s.SignSha256, s.EnclaveInfoConfig, s.TMSPort, s.TDFSPort)
+		})
 	return kInstance
 }
 
