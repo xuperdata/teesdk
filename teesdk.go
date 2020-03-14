@@ -113,8 +113,13 @@ type TEEClient struct {
 
 }
 
+// env_logger can be init once, so single instance patten is adapted
+var kInstance *TEEClient
 func NewTEEClient(uid, token, pd, ss, eic string, tmsport, tdfsport int32) *TEEClient {
-	s := &TEEClient{
+	if kInstance != nil {
+		return kInstance;
+	}
+	kInstance := &TEEClient{
             Uid:                C.CString(uid),
 	    Token:              C.CString(token),
 	    PublicDer:          C.CString(pd),
@@ -123,8 +128,9 @@ func NewTEEClient(uid, token, pd, ss, eic string, tmsport, tdfsport int32) *TEEC
 	    TMSPort:		C.int32_t(tmsport),
 	    TDFSPort:		C.int32_t(tdfsport),
 	}
+	s := kInstance
         C.init(s.PublicDer, s.SignSha256, s.EnclaveInfoConfig, s.TMSPort, s.TDFSPort)
-	return s
+	return kInstance
 }
 
 func (s *TEEClient) Close() {
