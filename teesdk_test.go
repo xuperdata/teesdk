@@ -70,8 +70,7 @@ func check(t *testing.T, result string) {
 		Method: "debug",
 		Args: result,
 		Svn: 0,
-		ContentSig: "caca",
-		AddrHash: "cccc",
+		Address: "cccc",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -106,7 +105,7 @@ func TestTF(t *testing.T) {
 	must(t, err)
 	data, err  = json.Marshal(FuncCaller {
 		Method:"store", Args: string(data), Svn: 0,
-		ContentSig: "hello", AddrHash: "cccc"});
+		Address: "cccc"});
 	must(t, err)
 
 	result, err = teeClient.Submit("xchaintf", string(data)) // 模拟密文赋值操作
