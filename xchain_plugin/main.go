@@ -3,8 +3,10 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"path"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/spf13/viper"
 
 	"github.com/xuperdata/teesdk"
 	"github.com/xuperdata/teesdk/xchain_plugin/pb"
@@ -15,9 +17,25 @@ var (
 	tconfig *teesdk.TEEConfig
 )
 
-func Init(conf string) error {
-	var cfg teesdk.TEEConfig
-	if err := json.Unmarshal([]byte(conf), &cfg); err != nil {
+func loadConfigFile(configPath string, confName string) (nc teesdk.TEEConfig,err error) {
+        viper.SetConfigName(confName)
+        viper.AddConfigPath(configPath)
+        err = viper.ReadInConfig()
+        if err != nil {
+		return
+        }
+        if err = viper.Unmarshal(&nc); err != nil {
+		return
+        }
+	return
+}
+
+
+func Init(confPath string) error {
+	confName := path.Base(confPath)
+	dirName := path.Dir(confPath)
+	cfg, err := loadConfigFile(dirName, confName)
+	if err != nil {
 		return err
 	}
 	tconfig = &cfg
