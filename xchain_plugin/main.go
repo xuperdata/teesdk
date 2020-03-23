@@ -2,11 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"fmt"
-	"path"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 
 	"github.com/xuperdata/teesdk"
 	"github.com/xuperdata/teesdk/xchain_plugin/pb"
@@ -17,28 +17,25 @@ var (
 	tconfig *teesdk.TEEConfig
 )
 
-func loadConfigFile(configPath string, confName string) (nc teesdk.TEEConfig,err error) {
-        viper.SetConfigName(confName)
-        viper.AddConfigPath(configPath)
-        err = viper.ReadInConfig()
-        if err != nil {
-		return
-        }
-        if err = viper.Unmarshal(&nc); err != nil {
-		return
-        }
-	return
+func loadConfigFile(configPath string) (*teesdk.TEEConfig, error) {
+	data, err := ioutil.ReadFile(configPath)
+	if err != nil {
+		return nil, err
+	}
+	var nc teesdk.TEEConfig
+	if err := yaml.Unmarshal(data, &nc); err != nil {
+		return nil, err
+	}
+	return &nc, nil
 }
 
 
 func Init(confPath string) error {
-	confName := path.Base(confPath)
-	dirName := path.Dir(confPath)
-	cfg, err := loadConfigFile(dirName, confName)
+	cfg, err := loadConfigFile(confPath)
 	if err != nil {
 		return err
 	}
-	tconfig = &cfg
+	tconfig = cfg
 	client = teesdk.NewTEEClient(cfg.Uid,
 		cfg.Token,
 		cfg.Auditors[0].PublicDer,
