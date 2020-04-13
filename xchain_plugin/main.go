@@ -41,8 +41,7 @@ func Init(confPath string) error {
 		cfg.Auditors[0].PublicDer,
 		cfg.Auditors[0].Sign,
 		cfg.Auditors[0].EnclaveInfoConfig,
-		cfg.TMSPort,
-		cfg.TDFSPort)
+		cfg.TMSPort)
 	return nil
 }
 
