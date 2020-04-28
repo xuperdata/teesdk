@@ -5,6 +5,8 @@ type FuncCaller struct {
     Args string     `json:"args"`
     Svn uint32   `json:"svn"`
     Address string `json:"address"`
+    PublicKey string `json:"public_key"`
+    Signature string `json:"signature"`
 }
 
 type KMSCaller struct {

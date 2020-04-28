@@ -62,7 +62,8 @@ func Run(requestBuf []byte) ([]byte, error) {
 	}
 	if tmpbuf, err = json.Marshal(teesdk.FuncCaller{
 		Method: in.Method, Args: in.Args, Svn: in.Svn,
-		Address: in.Address}); err != nil {
+		Address: in.Address, PublicKey: in.PublicKey,
+		Signature: in.Signature}); err != nil {
 		return nil, err
 	}
 	if tmpbufstr, err = client.Submit("xchaintf", string(tmpbuf)); err != nil {

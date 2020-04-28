@@ -128,12 +128,12 @@ func NewTEEClient(uid, token, pd, ss, eic string, tmsport int32) *TEEClient {
 }
 
 func (s *TEEClient) Close() {
-    C.release();
-    C.free(unsafe.Pointer(s.Uid));
-    C.free(unsafe.Pointer(s.Token));
-    C.free(unsafe.Pointer(s.PublicDer));
-    C.free(unsafe.Pointer(s.SignSha256));
-    C.free(unsafe.Pointer(s.EnclaveInfoConfig));
+    C.release()
+    C.free(unsafe.Pointer(s.Uid))
+    C.free(unsafe.Pointer(s.Token))
+    C.free(unsafe.Pointer(s.PublicDer))
+    C.free(unsafe.Pointer(s.SignSha256))
+    C.free(unsafe.Pointer(s.EnclaveInfoConfig))
 }
 
 func (s *TEEClient) Submit(method string, cipher string) (string, error) {
