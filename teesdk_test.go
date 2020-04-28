@@ -199,7 +199,6 @@ func testBinaryOp(t *testing.T) {
 		"l": ciphertext,
 		"r": ciphertext2,
 		"o": outputKey,
-		"user": user,
 		"commitment": commitment,
 		"commitment2": commitment2,
 	}
