@@ -1,4 +1,14 @@
-package teesdk 
+package teesdk
+
+import(
+    "crypto/ecdsa"
+    "fmt"
+    "time"
+    "crypto/sha256"
+    "crypto/elliptic"
+    "crypto/rand"
+    "encoding/hex"
+)
 
 type FuncCaller struct {
     Method string  `json:"method"`
@@ -8,9 +18,35 @@ type FuncCaller struct {
     PublicKey string `json:"public_key"`
     Signature string `json:"signature"`
 }
+func(k* FuncCaller) Sign(sk *ecdsa.PrivateKey) (*FuncCaller, error) {
+     msg := k.Method + k.Args;
+     hash := sha256.Sum256([]byte(msg))
+     sig, err := sk.Sign(rand.Reader, hash[:], nil)
+     if err != nil {
+	 return k, err
+     }
+     pk := sk.PublicKey
+     k.PublicKey = hex.EncodeToString(elliptic.Marshal(pk.Curve, pk.X, pk.Y))
+     k.Signature = hex.EncodeToString(sig)
+     return k, nil
+}
 
 type KMSCaller struct {
     Method string `json:"method"`// init
     Kds string   `json:"kds"`
     Svn uint32   `json:"svn"`
+    Timestamp int64 `json:"timestamp"`
+    Signature string `json:"signature"`
+}
+
+func(k* KMSCaller) Sign(sk *ecdsa.PrivateKey) (*KMSCaller, error) {
+     k.Timestamp = time.Now().Unix();
+     msg := k.Method + k.Kds + fmt.Sprintf("%d%d",k.Svn, k.Timestamp);
+     hash := sha256.Sum256([]byte(msg))
+     sig, err := sk.Sign(rand.Reader, hash[:], nil)
+     if err != nil {
+	 return k, err
+     }
+     k.Signature = hex.EncodeToString(sig)
+     return k, nil
 }

@@ -101,7 +101,7 @@ type TEEClient struct {
     PublicDer          *C.char
     SignSha256	       *C.char
     EnclaveInfoConfig  *C.char
-    TMSPort	       	   C.int32_t
+    TMSPort            C.int32_t
     TDFSPort           C.int32_t
 }
 
