@@ -13,6 +13,8 @@ message TrustFunctionCallRequest {
   string args = 3;
   uint32 svn = 4;
   string address = 5;
+  string publicKey = 6;
+  string signature = 7;
 }
 
 message KVPair {
