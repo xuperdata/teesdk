@@ -66,10 +66,68 @@ var (
 	sum = "37"
 )
 
+// test key derivation
+func testKeyMint(t *testing.T) {
+	caller := &KMSCaller{Method: "init", Svn: 0, Kds: kds_0}
+	caller, err := caller.Sign(getPrivateKey())
+	must(t, err)
+	data, err := json.Marshal(caller)
+	must(t, err)
+	t.Logf("%s", data)
+	result, err := teeClient.Submit("xchainkms", string(data))
+	must(t, err)
+	t.Log(result)
+
+	current_svn64, err := strconv.ParseUint(result, 10, 32)
+	must(t, err)
+	current_svn := uint32(current_svn64)
+
+	// get kds_0
+	caller = &KMSCaller{Method: "mint", Svn: 0, Kds: bds}
+	caller, err = caller.Sign(getPrivateKey())
+	must(t, err)
+	data, err = json.Marshal(caller)
+	must(t, err)
+	result, err = teeClient.Submit("xchainkms", string(data))
+	must(t, err)
+	if result != kds_0 {
+		t.Fatal("kds_0 derivates error")
+	}
+	t.Log("mint: kds0 = " + result)
+
+	current_svn += 1
+	// get kds_1
+	caller = &KMSCaller{Method: "mint", Svn: current_svn, Kds: bds}
+	caller, err = caller.Sign(getPrivateKey())
+	must(t, err)
+	data, err = json.Marshal(caller)
+	result2, err := teeClient.Submit("xchainkms", string(data))
+	must(t, err)
+	t.Log("mint: kds1 = " + result2)
+
+	// kds update kds_0 -> kds_1
+	caller = &KMSCaller{Method: "inc", Svn: current_svn, Kds: result2}
+	caller, err = caller.Sign(getPrivateKey())
+	must(t, err)
+	data, err = json.Marshal(caller)
+	must(t, err)
+	result2, err = teeClient.Submit("xchainkms", string(data))
+	must(t, err)
+	t.Log("inc svn: " + result2)
+
+	// kds update kds_0 -> kds_1
+	caller = &KMSCaller{Method: "dump", Svn: current_svn}
+	caller, err = caller.Sign(getPrivateKey())
+	must(t, err)
+	data, err = json.Marshal(caller)
+	must(t, err)
+	result2, err = teeClient.Submit("xchainkms", string(data))
+	must(t, err)
+	t.Log("dump kds: " + result2)
+}
+
 // test trust computing, encrypt, decrypt, authorize and binary ops
 func TestTF(t *testing.T) {
-	// init key
-	testKeyMint(t)
 	t.Log("TestTF")
 	testEncDec(t)
 	testAuth(t)
@@ -286,62 +344,3 @@ func must(t *testing.T, err error) {
 	}
 }
 
-// test key derivation
-func testKeyMint(t *testing.T) {
-	caller := &KMSCaller{Method: "init", Svn: 0, Kds: kds_0}
-	caller, err := caller.Sign(getPrivateKey())
-	must(t, err)
-	data, err := json.Marshal(caller)
-	must(t, err)
-	t.Logf("%s", data)
-	result, err := teeClient.Submit("xchainkms", string(data))
-	must(t, err)
-	t.Log(result)
-
-	current_svn64, err := strconv.ParseUint(result, 10, 32)
-	must(t, err)
-	current_svn := uint32(current_svn64)
-
-	// get kds_0
-	caller = &KMSCaller{Method: "mint", Svn: 0, Kds: bds}
-	caller, err = caller.Sign(getPrivateKey())
-	must(t, err)
-	data, err = json.Marshal(caller)
-	must(t, err)
-	result, err = teeClient.Submit("xchainkms", string(data))
-	must(t, err)
-	if result != kds_0 {
-		t.Fatal("kds_0 derivates error")
-	}
-	t.Log("mint: kds0 = " + result)
-
-	current_svn += 1
-	// get kds_1
-	caller = &KMSCaller{Method: "mint", Svn: current_svn, Kds: bds}
-	caller, err = caller.Sign(getPrivateKey())
-	must(t, err)
-	data, err = json.Marshal(caller)
-	result2, err := teeClient.Submit("xchainkms", string(data))
-	must(t, err)
-	t.Log("mint: kds1 = " + result2)
-
-	// kds update kds_0 -> kds_1
-	caller = &KMSCaller{Method: "inc", Svn: current_svn, Kds: result2}
-	caller, err = caller.Sign(getPrivateKey())
-	must(t, err)
-	data, err = json.Marshal(caller)
-	must(t, err)
-	result2, err = teeClient.Submit("xchainkms", string(data))
-	must(t, err)
-	t.Log("inc svn: " + result2)
-
-	// kds update kds_0 -> kds_1
-	caller = &KMSCaller{Method: "dump", Svn: current_svn}
-	caller, err = caller.Sign(getPrivateKey())
-	must(t, err)
-	data, err = json.Marshal(caller)
-	must(t, err)
-	result2, err = teeClient.Submit("xchainkms", string(data))
-	must(t, err)
-	t.Log("dump kds: " + result2)
-}
