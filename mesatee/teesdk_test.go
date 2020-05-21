@@ -67,7 +67,7 @@ var (
 )
 
 // test key derivation
-func testKeyMint(t *testing.T) {
+func TestKeyMint(t *testing.T) {
 	caller := &KMSCaller{Method: "init", Svn: 0, Kds: kds_0}
 	caller, err := caller.Sign(getPrivateKey())
 	must(t, err)
