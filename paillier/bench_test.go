@@ -1,6 +1,7 @@
 package paillier
 
 import (
+	"math/big"
 	"testing"
 )
 
@@ -8,9 +9,9 @@ var (
 	benchbit = 1024
 	prv string
 	pub string
-	plain1 = 25
-	plain2 = 12
-	scal = 10
+	plain1 = big.NewInt(25)
+	plain2 = big.NewInt(12)
+	scal = big.NewInt(10)
 	cipher1 string
 	cipher2 string
 )
@@ -42,11 +43,11 @@ func BenchmarkMul(b *testing.B) {
 }
 
 func testKeyGen() {
-	prv, pub = KeyGen(benchbit)
+	prv, pub, _ = KeyGen(benchbit)
 }
 func testEnc() {
-	cipher1 = PaillierEnc(uint64(plain1), pub)
-	cipher2 = PaillierEnc(uint64(plain2), pub)
+	cipher1,_ = PaillierEnc(plain1, pub)
+	cipher2,_ = PaillierEnc(plain2, pub)
 }
 func testDec() {
 	PaillierDec(cipher1, prv)
@@ -55,5 +56,5 @@ func testMul() {
 	PaillierMul(pub, cipher1, cipher2)
 }
 func testExp() {
-	PaillierExp(pub, cipher1, uint32(scal))
+	PaillierExp(pub, cipher1, scal)
 }

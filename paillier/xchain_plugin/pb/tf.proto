@@ -59,7 +59,7 @@ message PaillierDecParams {
 	string password = 4;
 }
 message PaillierDecOutputs {
-	uint64 plaintext = 1;
+	string plaintext = 1;
 }
 
 message PaillierMulParams {

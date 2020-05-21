@@ -2,6 +2,7 @@ package paillier
 
 import (
     "encoding/base64"
+    "fmt"
     "math/big"
     "strings"
 )
@@ -41,10 +42,16 @@ func PrivateToString(key *PrivateKey) string {
     return p + "," + q
 }
 
-func PrivateFromString(data64 string) (*PrivateKey) {
+func PrivateFromString(data64 string) (*PrivateKey, error) {
     pq64 := strings.Split(data64, ",")
-    p64,_ := base64.RawStdEncoding.DecodeString(pq64[0])
-    q64,_ := base64.RawStdEncoding.DecodeString(pq64[1])
+    p64,err := base64.RawStdEncoding.DecodeString(pq64[0])
+    if err != nil {
+        return nil, fmt.Errorf("decode private key error: %v", err)
+    }
+    q64,err := base64.RawStdEncoding.DecodeString(pq64[1])
+    if err != nil {
+        return nil, fmt.Errorf("decode private key error: %v", err)
+    }
     p := new(big.Int).SetBytes(p64)
     q := new(big.Int).SetBytes(q64)
     n := new(big.Int).Mul(p,q)
@@ -62,15 +69,18 @@ func PrivateFromString(data64 string) (*PrivateKey) {
         Q: q,
         Lambda: lambda,
         Mu: mu,
-    }
+    },nil
 }
 
 func PublicToString(key *PublicKey) string {
     return base64.RawStdEncoding.EncodeToString(key.N.Bytes())
 }
 
-func PublicFromString(data64 string) (*PublicKey) {
-    data,_ := base64.RawStdEncoding.DecodeString(data64)
+func PublicFromString(data64 string) (*PublicKey, error) {
+    data,err := base64.RawStdEncoding.DecodeString(data64)
+    if err != nil {
+        return nil, fmt.Errorf("decode public key error: %v", err)
+    }
     n := new(big.Int).SetBytes(data)
     g := new(big.Int).Add(n, one)
     nn := new(big.Int).Mul(n, n)
@@ -78,15 +88,18 @@ func PublicFromString(data64 string) (*PublicKey) {
         N:  n,
         G:  g,
         NN: nn,
-    }
+    },nil
 }
 
 func CipherToString(cipher *big.Int) string {
     return base64.RawStdEncoding.EncodeToString(cipher.Bytes())
 }
 
-func CipherFromString(cipher64 string) *big.Int {
-    data,_ := base64.RawStdEncoding.DecodeString(cipher64)
-    return new(big.Int).SetBytes(data)
+func CipherFromString(cipher64 string) (*big.Int, error) {
+    data,err := base64.RawStdEncoding.DecodeString(cipher64)
+    if err != nil {
+        return nil, fmt.Errorf("decode ciphertext error: %v", err)
+    }
+    return new(big.Int).SetBytes(data),nil
 
 }

@@ -5,9 +5,9 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/json"
+	"github.com/xuperchain/crypto/core/account"
 	"strconv"
 	"testing"
-	"github.com/xuperchain/crypto/core/account"
 )
 
 var (
@@ -30,10 +30,16 @@ var (
 	password = "123456"
 )
 
-func getPrivateKey() *ecdsa.PrivateKey {
-	prvkey,_ := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+func getPrivateKey(t *testing.T) *ecdsa.PrivateKey {
+	prvkey,err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		t.Fatal(err)
+	}
 	pubkey := ecdsa.PublicKey{elliptic.P256(), prvkey.X, prvkey.Y}
-	owner,_ = account.GetAddressFromPublicKey(&pubkey)
+	owner,err = account.GetAddressFromPublicKey(&pubkey)
+	if err != nil {
+		t.Fatal(err)
+	}
 	return prvkey
 }
 
@@ -42,13 +48,19 @@ func TestKeyGen(t *testing.T) {
 	keyGenData := map[string]int{
 		"secbit": testBit,
 	}
-	data,_ := json.Marshal(keyGenData)
+	data,err := json.Marshal(keyGenData)
+	if err != nil {
+		t.Fatal(err)
+	}
 	caller := &FuncCaller{
 		Method:  "PaillierKeyGen",
 		Args:    string(data),
 		Address: owner,
 	}
-	data,_ = json.Marshal(caller)
+	data,err = json.Marshal(caller)
+	if err != nil {
+		t.Fatal(err)
+	}
 	// call paillier and encrypt testdata
 	result, err := client.Submit("paillier", string(data))
 	if err != nil {
@@ -74,13 +86,19 @@ func TestEnc(t *testing.T) {
 		"message": strconv.Itoa(plaintext1),
 		"publicKey": pubkey,
 	}
-	data,_ := json.Marshal(encData1)
+	data,err := json.Marshal(encData1)
+	if err != nil {
+		t.Fatal(err)
+	}
 	caller := &FuncCaller{
 		Method:  "PaillierEnc",
 		Args:    string(data),
 		Address: owner,
 	}
-	data,_ = json.Marshal(caller)
+	data,err = json.Marshal(caller)
+	if err != nil {
+		t.Fatal(err)
+	}
 	// call paillier and encrypt plaintext1
 	result, err := client.Submit("paillier", string(data))
 	if err != nil {
@@ -101,13 +119,19 @@ func TestEnc(t *testing.T) {
 		"message": strconv.Itoa(plaintext2),
 		"publicKey": pubkey,
 	}
-	data,_ = json.Marshal(encData2)
+	data,err = json.Marshal(encData2)
+	if err != nil {
+		t.Fatal(err)
+	}
 	caller2 := &FuncCaller{
 		Method:  "PaillierEnc",
 		Args:    string(data),
 		Address: owner,
 	}
-	data,_ = json.Marshal(caller2)
+	data,err = json.Marshal(caller2)
+	if err != nil {
+		t.Fatal(err)
+	}
 	// call paillier and encrypt plaintext2
 	result, err = client.Submit("paillier", string(data))
 	if err != nil {
@@ -133,13 +157,19 @@ func TestDec(t *testing.T) {
 		"prvkeyPath": path,
 		"password": password,
 	}
-	data,_ := json.Marshal(decData)
+	data,err := json.Marshal(decData)
+	if err != nil {
+		t.Fatal(err)
+	}
 	caller := &FuncCaller{
 		Method:  "PaillierDec",
 		Args:    string(data),
 		Address: owner,
 	}
-	data,_ = json.Marshal(caller)
+	data,err = json.Marshal(caller)
+	if err != nil {
+		t.Fatal(err)
+	}
 	// call paillier and decrypt testdata
 	result, err := client.Submit("paillier", string(data))
 	if err != nil {
@@ -148,19 +178,26 @@ func TestDec(t *testing.T) {
 	t.Log(result)
 
 	// get plaintext
-	var resMap map[string]uint64
+	var resMap map[string]string
 	err = json.Unmarshal([]byte(result), &resMap)
 	if err != nil {
 		t.Fatal(err)
 	}
 	plain := resMap["plaintext"]
-	t.Logf("decrypted ciphertext1: %d\n", plain)
+	t.Logf("decrypted ciphertext1: %s\n", plain)
 }
 
 func TestMul(t *testing.T) {
-	ecdsaPrvkey := getPrivateKey()
-	commitment1 = Commit(ecdsaPrvkey, ciphertext1, user)
-	commitment2 = Commit(ecdsaPrvkey, ciphertext2, user)
+	ecdsaPrvkey := getPrivateKey(t)
+	var err error
+	commitment1, err = Commit(ecdsaPrvkey, ciphertext1, user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	commitment2, err = Commit(ecdsaPrvkey, ciphertext2, user)
+	if err != nil {
+		t.Fatal(err)
+	}
 	mulData := map[string]string{
 		"publicKey": pubkey,
 		"ciphertext1": ciphertext1,
@@ -168,13 +205,19 @@ func TestMul(t *testing.T) {
 		"ciphertext2": ciphertext2,
 		"commitment2": commitment2,
 	}
-	data,_ := json.Marshal(mulData)
+	data,err := json.Marshal(mulData)
+	if err != nil {
+		t.Fatal(err)
+	}
 	caller := &FuncCaller{
 		Method:  "PaillierMul",
 		Args:    string(data),
 		Address: user,
 	}
-	data,_ = json.Marshal(caller)
+	data,err = json.Marshal(caller)
+	if err != nil {
+		t.Fatal(err)
+	}
 	// call paillier and multiply ciphertext
 	result, err := client.Submit("paillier", string(data))
 	if err != nil {
@@ -191,8 +234,11 @@ func TestMul(t *testing.T) {
 
 	cipherMul := resMap["ciphertext"]
 	t.Logf("multiplication of two ciphertexts: %s\n", cipherMul)
-	mulRes :=  PaillierDec(cipherMul, prvkey)
-	t.Logf("decrypted cipherMul: %d\n", mulRes)
+	mulRes,err :=  PaillierDec(cipherMul, prvkey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("decrypted cipherMul: %s\n", mulRes.String())
 }
 
 func TestExp(t *testing.T) {
@@ -202,13 +248,20 @@ func TestExp(t *testing.T) {
 		"commitment": commitment1,
 		"scalar": strconv.Itoa(scalar),
 	}
-	data,_ := json.Marshal(expData)
+	data,err := json.Marshal(expData)
+	if err != nil {
+		t.Fatal(err)
+	}
 	caller := &FuncCaller{
 		Method:  "PaillierExp",
 		Args:    string(data),
 		Address: user,
 	}
-	data,_ = json.Marshal(caller)
+	data, err = json.Marshal(caller)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// call paillier and multiply ciphertext
 	result, err := client.Submit("paillier", string(data))
 	if err != nil {
@@ -225,6 +278,9 @@ func TestExp(t *testing.T) {
 
 	cipherExp := resMap["ciphertext"]
 	t.Logf("exponentiation of ciphertext1 and %d: %s\n", scalar, cipherExp)
-	expRes :=  PaillierDec(cipherExp, prvkey)
-	t.Logf("decrypted cipherExp: %d\n", expRes)
+	expRes,err :=  PaillierDec(cipherExp, prvkey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("decrypted cipherExp: %s\n", expRes.String())
 }
