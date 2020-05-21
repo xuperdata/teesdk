@@ -1,4 +1,4 @@
-package teesdk
+package mesatee
 
 import(
     "crypto/ecdsa"
@@ -19,7 +19,7 @@ type FuncCaller struct {
     Signature string `json:"signature"`
 }
 func(k* FuncCaller) Sign(sk *ecdsa.PrivateKey) (*FuncCaller, error) {
-     msg := k.Method + k.Args;
+     msg := k.Method + k.Args
      hash := sha256.Sum256([]byte(msg))
      sig, err := sk.Sign(rand.Reader, hash[:], nil)
      if err != nil {
@@ -40,7 +40,7 @@ type KMSCaller struct {
 }
 
 func(k* KMSCaller) Sign(sk *ecdsa.PrivateKey) (*KMSCaller, error) {
-     k.Timestamp = time.Now().Unix();
+     k.Timestamp = time.Now().Unix()
      msg := k.Method + k.Kds + fmt.Sprintf("%d%d",k.Svn, k.Timestamp);
      hash := sha256.Sum256([]byte(msg))
      sig, err := sk.Sign(rand.Reader, hash[:], nil)

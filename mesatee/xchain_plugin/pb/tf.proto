@@ -1,6 +1,6 @@
 syntax = "proto3";
 option optimize_for = LITE_RUNTIME;
-option go_package = "github.com/xuperdata/teesdk/xchain_plugin/pb";
+option go_package = "github.com/xuperdata/teesdk/mesatee/xchain_plugin/pb";
 
 message SyscallHeader {
   int64 ctxid = 1;
