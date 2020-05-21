@@ -22,7 +22,7 @@
 extern "C" {
 #endif
 
-#include <mesatee/visibility.h>
+#include <include/visibility.h>
 #include <sys/socket.h>
 
 typedef struct mesatee mesatee_t;

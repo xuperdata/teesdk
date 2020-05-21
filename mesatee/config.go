@@ -1,4 +1,4 @@
-package teesdk
+package mesatee
 
 type TEEConfig struct {
 	Svn      uint32         `yaml:"svn"`

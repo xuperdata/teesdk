@@ -1,13 +1,15 @@
 ## teesdk 
-A MesaTEE SDK by Golang as a wrapper of the C SDK
+teesdk is a union of trusted ledger sdk, including teesdk and paillier.
 
 ## Usage 
-1. compile [mesatee-core-standalone](https://github.com/xuperdata/mesatee-core-standalone), and update the dylib [lib/libmesatee_sdk_c.so](./lib/libmesatee_sdk_c.so)
 
-2. start the MesaTEE service;
+1. run the unit test  
+```
+go test -v ./...
+```
 
-3. run the unit test  
+2. build teesdk
 ```
-go test -v ./... -mod=vendor
+./build.sh
 ```
-or your program.
+output files are in build directory

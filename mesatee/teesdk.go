@@ -1,14 +1,14 @@
-package teesdk
+package mesatee
 
 /*
 #cgo CFLAGS: -I${SRCDIR} 
 #cgo LDFLAGS: -L ${SRCDIR}/lib -lmesatee_sdk_c -Wl,-rpath=${SRCDIR}/lib
 
-#include "mesatee/mesatee.h"
+#include "include/mesatee.h"
 
 #include <arpa/inet.h>
 #include <string.h>
-#include <mesatee/mesatee.h>
+#include <include/mesatee.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -105,12 +105,12 @@ type TEEClient struct {
     TDFSPort           C.int32_t
 }
 
-// env_logger can be init once, so single instance patten is adapted
+// env_loggecr can be init once, so single instance patten is adapted
 var kInstance *TEEClient
 var once sync.Once
 func NewTEEClient(uid, token, pd, ss, eic string, tmsport int32) *TEEClient {
 	if kInstance != nil {
-		return kInstance;
+		return kInstance
 	}
 	once.Do(func() {
 		kInstance = &TEEClient{

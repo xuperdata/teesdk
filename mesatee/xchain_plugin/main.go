@@ -2,27 +2,29 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/xuperdata/teesdk/mesatee"
+	"github.com/xuperdata/teesdk/mesatee/xchain_plugin/pb"
 	"io/ioutil"
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
 	"gopkg.in/yaml.v2"
 
-	"github.com/xuperdata/teesdk"
-	"github.com/xuperdata/teesdk/xchain_plugin/pb"
+//	"github.com/xuperdata/teesdk"
+//	"github.com/xuperdata/teesdk/xchain_plugin/pb"
 )
 
 var (
-	client  *teesdk.TEEClient
-	tconfig *teesdk.TEEConfig
+	client  *mesatee.TEEClient
+	tconfig *mesatee.TEEConfig
 )
 
-func loadConfigFile(configPath string) (*teesdk.TEEConfig, error) {
+func loadConfigFile(configPath string) (*mesatee.TEEConfig, error) {
 	data, err := ioutil.ReadFile(configPath)
 	if err != nil {
 		return nil, err
 	}
-	var nc teesdk.TEEConfig
+	var nc mesatee.TEEConfig
 	if err := yaml.Unmarshal(data, &nc); err != nil {
 		return nil, err
 	}
@@ -36,7 +38,7 @@ func Init(confPath string) error {
 		return err
 	}
 	tconfig = cfg
-	client = teesdk.NewTEEClient(cfg.Uid,
+	client = mesatee.NewTEEClient(cfg.Uid,
 		cfg.Token,
 		cfg.Auditors[0].PublicDer,
 		cfg.Auditors[0].Sign,
@@ -60,7 +62,7 @@ func Run(requestBuf []byte) ([]byte, error) {
 		err = fmt.Errorf("IsTFCEnabled is false, this node doest not enable TEE")
 		return nil, err
 	}
-	if tmpbuf, err = json.Marshal(teesdk.FuncCaller{
+	if tmpbuf, err = json.Marshal(mesatee.FuncCaller{
 		Method: in.Method, Args: in.Args, Svn: in.Svn,
 		Address: in.Address, PublicKey: in.PublicKey,
 		Signature: in.Signature}); err != nil {

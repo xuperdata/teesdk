@@ -1,7 +1,7 @@
 /*
   This is a test file for mesatee-core-standalone
 */
-package teesdk
+package mesatee
 
 import (
 	"crypto/ecdsa"
@@ -69,7 +69,7 @@ var (
 // test trust computing, encrypt, decrypt, authorize and binary ops
 func TestTF(t *testing.T) {
 	// init key
-	TestKeyMint(t)
+	testKeyMint(t)
 	t.Log("TestTF")
 	testEncDec(t)
 	testAuth(t)
@@ -287,7 +287,7 @@ func must(t *testing.T, err error) {
 }
 
 // test key derivation
-func TestKeyMint(t *testing.T) {
+func testKeyMint(t *testing.T) {
 	caller := &KMSCaller{Method: "init", Svn: 0, Kds: kds_0}
 	caller, err := caller.Sign(getPrivateKey())
 	must(t, err)
