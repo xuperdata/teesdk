@@ -53,6 +53,23 @@ paiilier是一种加法同态算法，安全性依赖于大整数分解难题。
 
    3). 拉取超级链SDK最新的代码。配置sdk.yaml.tee
 
+   ```
+   tfConfig:
+    teeConfig:
+     svn: 0
+     enable: off
+     tmsport: 8082
+     uid: "uid1"
+     token: "token1"
+     auditors:
+       -
+        publicder: /root/mesatee-core-standalone/release/services/auditors/godzilla/godzilla.public.der
+        sign: /root/mesatee-core-standalone/release/services/auditors/godzilla/godzilla.sign.sha256
+        enclaveinfoconfig: /root/mesatee-core-standalone/release/services/enclave_info.toml
+   paillierConfig:
+    enable: on
+   ```
+
 2. 测试
 
    可信应用开发参考合约paillier.cc；可信合约相关测试参考[main_paillier](https://github.com/xuperdata/xuper-sdk-go/blob/master/example/main_trust_counter.go)；paillier相关测试参考[pailliertest](https://github.com/xuperdata/teesdk/blob/master/paillier/paillier_test.go)。
