@@ -1,5 +1,5 @@
 ## paillier 
-A Paillier SDK by Golang as a wrapper of libpaillier(http://hms.isi.jhu.edu/acsc/libpaillier/)
+A Paillier SDK by Golang 
 
 ## Usage 
 
@@ -28,3 +28,6 @@ goarch: amd64
 | Dec    | 421               | 64                | 9                 |
 | Add    | 231857            | 81327             | 27924             |
 | Scalar | 62181             | 20756             | 7525              |
+
+## Reference
+1. http://hms.isi.jhu.edu/acsc/libpaillier/
