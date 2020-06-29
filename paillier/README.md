@@ -1,5 +1,5 @@
 ## paillier 
-A Paillier SDK by Golang 
+A Paillier Cryptography implementation by Golang 
 
 ## Usage 
 
