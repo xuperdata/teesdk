@@ -219,7 +219,7 @@ func PaillierExpToMap(caller FuncCaller) (string, error){
 	return string(resStr), nil
 }
 
-// paillier encryption method
+// paillier key generation
 func KeyGen(secbit int) (prv string, pub string, err error){
 	keylen := secbit/2
 	p, err := rand.Prime(rand.Reader, keylen)
@@ -230,6 +230,9 @@ func KeyGen(secbit int) (prv string, pub string, err error){
 	if err != nil {
 		return "", "", fmt.Errorf("generate random number error: %v", err)
 	}
+	pp := new(big.Int).Mul(p, p)
+	qq := new(big.Int).Mul(q, q)
+	pinvq := new(big.Int).ModInverse(p, q)
 	n := new(big.Int).Mul(p,q)
 	nn := new(big.Int).Mul(n,n)
 	lambda := new(big.Int).Mul(new(big.Int).Sub(p, one), new(big.Int).Sub(q, one))
@@ -243,13 +246,16 @@ func KeyGen(secbit int) (prv string, pub string, err error){
 		},
 		P: p,
 		Q: q,
+		PP: pp,
+		QQ: qq,
+		PinvQ: pinvq,
 		Lambda: lambda,
 		Mu: mu,
 	}
 	return PrivateToString(prvkey), PublicToString(&prvkey.PublicKey), nil
 }
 
-// c=G^m*r^N (mod N^2)
+// c = G^m*r^N (mod N^2)
 func PaillierEnc(m *big.Int, pubBase64 string) (string, error) {
 	pubkey,err := PublicFromString(pubBase64)
 	if err != nil {
@@ -268,7 +274,8 @@ func PaillierEnc(m *big.Int, pubBase64 string) (string, error) {
 	return CipherToString(cipher), nil
 }
 
-// m=L(c^Lambda mod N^2)*Mu (mod N)
+// m = L(c^Lambda mod N^2)*Mu (mod N)
+// optimization using CRT [Paillier99, section 7](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.112.4035&rep=rep1&type=pdf)
 func PaillierDec(cipherBase64, prvBase64 string) (*big.Int, error) {
 	prvkey,err := PrivateFromString(prvBase64)
 	if err != nil {
@@ -278,15 +285,27 @@ func PaillierDec(cipherBase64, prvBase64 string) (*big.Int, error) {
 	if err != nil {
 		return nil, err
 	}
-	nn := prvkey.PublicKey.NN
-	if c.Cmp(nn) >= 0 {
+	if c.Cmp(prvkey.NN) >= 0 {
 		return nil, errors.New("ciphertext must be smaller than n square")
 	}
-	clambda := new(big.Int).Exp(c, prvkey.Lambda, nn)
-	lc := L(clambda, prvkey.PublicKey.N)
-	lcn := new(big.Int).Mod(lc, prvkey.PublicKey.N)
-	lmu := new(big.Int).Mul(lcn, prvkey.Mu)
-	return new(big.Int).Mod(lmu, prvkey.PublicKey.N), nil
+	p1 := new(big.Int).Sub(prvkey.P, one)
+	cp := new(big.Int).Exp(c, p1, prvkey.PP)
+	lp := L(cp, prvkey.P)
+
+	gp := new(big.Int).Mod(new(big.Int).Sub(one, prvkey.N), prvkey.PP)
+	llp := L(gp, prvkey.P)
+	hp := new(big.Int).ModInverse(llp, prvkey.P)
+	a1 := new(big.Int).Mod(new(big.Int).Mul(lp, hp), prvkey.P)
+
+	q1 := new(big.Int).Sub(prvkey.Q, one)
+	cq := new(big.Int).Exp(c, q1, prvkey.QQ)
+	lq := L(cq, prvkey.Q)
+
+	gq := new(big.Int).Mod(new(big.Int).Sub(one, prvkey.N), prvkey.QQ)
+	llq := L(gq, prvkey.Q)
+	hq := new(big.Int).ModInverse(llq, prvkey.Q)
+	a2 := new(big.Int).Mod(new(big.Int).Mul(lq, hq), prvkey.Q)
+	return CRT(a1, a2, prvkey), nil
 }
 
 // cipherMul = cipher1*cipher2 (mod N^2)
@@ -324,4 +343,13 @@ func PaillierExp(pubBase64, cipherBase64 string, scalar *big.Int) (string, error
 // L(x) = (x-1)/n
 func L(x *big.Int, n *big.Int) *big.Int {
 	return new(big.Int).Div(new(big.Int).Sub(x, one), n)
+}
+
+// Chinese remainder theorem
+// m = a_1 + (a_2 - a_1)P^{-1}modQ * P (mod N)
+func CRT(a1, a2 *big.Int, prvkey *PrivateKey) *big.Int {
+	dif := new(big.Int).Sub(a2, a1)
+	difP := new(big.Int).Mod(new(big.Int).Mul(dif, prvkey.PinvQ), prvkey.Q)
+	difPP := new(big.Int).Mul(difP, prvkey.P)
+	return new(big.Int).Mod(new(big.Int).Add(a1, difPP), prvkey.N)
 }

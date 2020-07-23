@@ -24,6 +24,9 @@ type PrivateKey struct {
     PublicKey
     P			*big.Int	// P and Q have same length
     Q			*big.Int
+    PP			*big.Int    // P^2
+    QQ			*big.Int 	// Q^2
+    PinvQ		*big.Int	// P^{-1} mod Q
     Lambda		*big.Int	// Lambda=(P-1)(Q-1)
     Mu			*big.Int	// Mu=lambda^-1 (mod N)
 }
@@ -54,6 +57,9 @@ func PrivateFromString(data64 string) (*PrivateKey, error) {
     }
     p := new(big.Int).SetBytes(p64)
     q := new(big.Int).SetBytes(q64)
+    pp := new(big.Int).Mul(p, p)
+    qq := new(big.Int).Mul(q, q)
+    pinvq := new(big.Int).ModInverse(p, q)
     n := new(big.Int).Mul(p,q)
     nn := new(big.Int).Mul(n,n)
     lambda := new(big.Int).Mul(new(big.Int).Sub(p, one), new(big.Int).Sub(q, one))
@@ -67,6 +73,9 @@ func PrivateFromString(data64 string) (*PrivateKey, error) {
         },
         P: p,
         Q: q,
+        PP: pp,
+        QQ: qq,
+        PinvQ: pinvq,
         Lambda: lambda,
         Mu: mu,
     },nil
