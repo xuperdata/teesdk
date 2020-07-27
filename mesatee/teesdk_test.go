@@ -6,6 +6,8 @@ package mesatee
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -51,7 +53,7 @@ var teeClient = NewTEEClient("uid1", "token1", publicDer, signSha256, enclaveInf
 var (
 	owner = "Rx3Cihj8SJgrYaPgPj1XpodfHxUQXUxKi"
 	user  = "ZsPy7eELS55MXALUhAynUtjsxjeKFbwqy"
-	// ciphertext=25, ciphertext2=12
+	// plaintext=25, plaintext2=12
 	ciphertext  = ""
 	ciphertext2 = ""
 	commitment  = ""
@@ -64,7 +66,101 @@ var (
 		"bing": "12",
 	}
 	sum = "37"
+
+	bdsPath = "./bds"
+	bdsPwd  = "123456"
 )
+
+// test bds management with single admin
+func TestBdsSingleAdmin(t *testing.T) {
+	t.Log("Test bds with Single Manager")
+	bds := GenBds(256)
+	t.Log(bds)
+	err := SaveBds(bds, bdsPath, bdsPwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bdsLoad, err := LoadBdsFromFile(bdsPath, bdsPwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bdsLoad != bds {
+		t.Fatal("loaded bds is not equal to the original bds")
+	}
+	// destroy bds
+	sk := getPrivateKey()
+	hash := sha256.Sum256([]byte(bdsPath))
+	r, s, err := ecdsa.Sign(rand.Reader, sk, hash[:])
+	err, isRemoved := DestroyBds(bdsPath, r, s, &sk.PublicKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if isRemoved != true {
+		t.Fatal("failed to destroy bds")
+	}
+	t.Logf("bds destroyed")
+}
+
+// test bds management with multiple admins
+func TestBdsMulAdmins(t *testing.T) {
+	piecesNum := 5
+	threshold := 3
+	bds := GenBds(256)
+	t.Log(bds)
+	bdsPieces, err := GenBdsPieces(bds, piecesNum, threshold)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// save pieces to file
+	for i := 0; i < piecesNum; i++ {
+		path := "./bds_" + strconv.Itoa(i+1)
+		err := SaveBds(bdsPieces[i], path, bdsPwd)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	// load pieces from file
+	var pieces [3]string
+	path := "./bds_1"
+	pieces[0], err = LoadBdsFromFile(path, bdsPwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path = "./bds_3"
+	pieces[1], err = LoadBdsFromFile(path, bdsPwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	path = "./bds_5"
+	pieces[2], err = LoadBdsFromFile(path, bdsPwd)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// retrieve bds from pieces
+	bdsRetrieved, err := LoadBdsFromPieces(pieces[:])
+	if err != nil {
+		t.Fatal(err)
+	}
+	if bdsRetrieved != bds {
+		t.Fatal("retrieved wrong bds")
+	}
+	t.Log("successfully retrieved bds")
+	// destroy bds pieces
+	sk := getPrivateKey()
+	for i := 0; i < piecesNum; i++ {
+		path = "./bds_" + strconv.Itoa(i+1)
+		hash := sha256.Sum256([]byte(path))
+		r, s, err := ecdsa.Sign(rand.Reader, sk, hash[:])
+		err, isRemoved := DestroyBds(path, r, s, &sk.PublicKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if isRemoved != true {
+			t.Logf("failed to destroy bds_%d\n", i+1)
+		}
+	}
+	t.Logf("bds pieces destroyed")
+}
 
 // test key derivation
 func TestKeyMint(t *testing.T) {
@@ -175,7 +271,7 @@ func check(t *testing.T, result string) {
 		Svn:     0,
 		Address: owner,
 	}
-	caller , err := caller.Sign(getPrivateKey())
+	caller, err := caller.Sign(getPrivateKey())
 	must(t, err)
 	data, err := json.Marshal(caller)
 	if err != nil {
@@ -232,7 +328,7 @@ func testAuth(t *testing.T) {
 	}
 	caller, err = caller.Sign(getPrivateKey())
 	must(t, err)
-	data, err = json.Marshal(caller);
+	data, err = json.Marshal(caller)
 	must(t, err)
 	// call tee and get commitment
 	resultStr, err := teeClient.Submit("xchaintf", string(data))
@@ -283,12 +379,12 @@ func testBinaryOp(t *testing.T) {
 	data, err := json.Marshal(opData)
 	must(t, err)
 	caller := &FuncCaller{
-		Method:    "add",
-		Args:      string(data),
-		Svn:       0,
-		Address:   user,
+		Method:  "add",
+		Args:    string(data),
+		Svn:     0,
+		Address: user,
 	}
-	caller , err = caller.Sign(getPrivateKey())
+	caller, err = caller.Sign(getPrivateKey())
 	must(t, err)
 	data, err = json.Marshal(caller)
 	must(t, err)
@@ -343,4 +439,3 @@ func must(t *testing.T, err error) {
 		t.Fatal(fmt.Sprintf("%s:%d:%s: %s\n", filename, line, funcname, err.Error()))
 	}
 }
-

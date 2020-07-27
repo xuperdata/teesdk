@@ -6,6 +6,6 @@ import (
 )
 
 type TFConfig struct {
-	TEEConfig			mesatee.TEEConfig				`yaml:"teeConfig"`
-	PaillierConfig		paillier.PaillierConfig		`yaml:"paillierConfig"`
+	TEEConfig      mesatee.TEEConfig       `yaml:"teeConfig"`
+	PaillierConfig paillier.PaillierConfig `yaml:"paillierConfig"`
 }
