@@ -8,35 +8,37 @@ import (
 	"github.com/xuperchain/crypto/core/account"
 	"strconv"
 	"testing"
+
+	"github.com/xuperdata/teesdk/utils"
 )
 
 var (
-	testBit = 1024
-	prvkey string
-	pubkey string
-	plaintext1 = 25
-	plaintext2 = 12
-	scalar = 10
+	testBit     = 1024
+	prvkey      string
+	pubkey      string
+	plaintext1  = 25
+	plaintext2  = 12
+	scalar      = 10
 	ciphertext1 string
 	ciphertext2 string
-	cipherMul string
-	cipherExp string
+	cipherMul   string
+	cipherExp   string
 	commitment1 string
 	commitment2 string
-	owner = ""
-	user = "ZsPy7eELS55MXALUhAynUtjsxjeKFbwqy"
-	client = NewPaillierClient()
-	path = "./paillierPrv.key"
-	password = "123456"
+	owner       = ""
+	user        = "ZsPy7eELS55MXALUhAynUtjsxjeKFbwqy"
+	client      = NewPaillierClient()
+	path        = "./paillierPrv.key"
+	password    = "123456"
 )
 
 func getPrivateKey(t *testing.T) *ecdsa.PrivateKey {
-	prvkey,err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	prvkey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		t.Fatal(err)
 	}
 	pubkey := ecdsa.PublicKey{elliptic.P256(), prvkey.X, prvkey.Y}
-	owner,err = account.GetAddressFromPublicKey(&pubkey)
+	owner, err = account.GetAddressFromPublicKey(&pubkey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -48,7 +50,7 @@ func TestKeyGen(t *testing.T) {
 	keyGenData := map[string]int{
 		"secbit": testBit,
 	}
-	data,err := json.Marshal(keyGenData)
+	data, err := json.Marshal(keyGenData)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -57,7 +59,7 @@ func TestKeyGen(t *testing.T) {
 		Args:    string(data),
 		Address: owner,
 	}
-	data,err = json.Marshal(caller)
+	data, err = json.Marshal(caller)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,17 +78,17 @@ func TestKeyGen(t *testing.T) {
 	}
 	prvkey = resMap["privateKey"]
 	pubkey = resMap["publicKey"]
-	SavePrvKey(path, password, prvkey)
+	utils.SavePrvKey(path, password, prvkey)
 	t.Logf("private key: %s\n", prvkey)
 	t.Logf("public key: %s\n", pubkey)
 }
 
 func TestEnc(t *testing.T) {
 	encData1 := map[string]string{
-		"message": strconv.Itoa(plaintext1),
+		"message":   strconv.Itoa(plaintext1),
 		"publicKey": pubkey,
 	}
-	data,err := json.Marshal(encData1)
+	data, err := json.Marshal(encData1)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -95,7 +97,7 @@ func TestEnc(t *testing.T) {
 		Args:    string(data),
 		Address: owner,
 	}
-	data,err = json.Marshal(caller)
+	data, err = json.Marshal(caller)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,12 +116,12 @@ func TestEnc(t *testing.T) {
 	}
 	ciphertext1 = resMap["ciphertext"]
 
-    // encrypt plaintext2
+	// encrypt plaintext2
 	encData2 := map[string]string{
-		"message": strconv.Itoa(plaintext2),
+		"message":   strconv.Itoa(plaintext2),
 		"publicKey": pubkey,
 	}
-	data,err = json.Marshal(encData2)
+	data, err = json.Marshal(encData2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -128,7 +130,7 @@ func TestEnc(t *testing.T) {
 		Args:    string(data),
 		Address: owner,
 	}
-	data,err = json.Marshal(caller2)
+	data, err = json.Marshal(caller2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -153,11 +155,11 @@ func TestEnc(t *testing.T) {
 func TestDec(t *testing.T) {
 	decData := map[string]string{
 		"ciphertext": ciphertext1,
-		"publicKey": pubkey,
+		"publicKey":  pubkey,
 		"prvkeyPath": path,
-		"password": password,
+		"password":   password,
 	}
-	data,err := json.Marshal(decData)
+	data, err := json.Marshal(decData)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -166,7 +168,7 @@ func TestDec(t *testing.T) {
 		Args:    string(data),
 		Address: owner,
 	}
-	data,err = json.Marshal(caller)
+	data, err = json.Marshal(caller)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -199,13 +201,13 @@ func TestMul(t *testing.T) {
 		t.Fatal(err)
 	}
 	mulData := map[string]string{
-		"publicKey": pubkey,
+		"publicKey":   pubkey,
 		"ciphertext1": ciphertext1,
 		"commitment1": commitment1,
 		"ciphertext2": ciphertext2,
 		"commitment2": commitment2,
 	}
-	data,err := json.Marshal(mulData)
+	data, err := json.Marshal(mulData)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -214,7 +216,7 @@ func TestMul(t *testing.T) {
 		Args:    string(data),
 		Address: user,
 	}
-	data,err = json.Marshal(caller)
+	data, err = json.Marshal(caller)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -234,7 +236,7 @@ func TestMul(t *testing.T) {
 
 	cipherMul := resMap["ciphertext"]
 	t.Logf("multiplication of two ciphertexts: %s\n", cipherMul)
-	mulRes,err :=  PaillierDec(cipherMul, prvkey)
+	mulRes, err := PaillierDec(cipherMul, prvkey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -243,12 +245,12 @@ func TestMul(t *testing.T) {
 
 func TestExp(t *testing.T) {
 	expData := map[string]string{
-		"publicKey": pubkey,
+		"publicKey":  pubkey,
 		"ciphertext": ciphertext1,
 		"commitment": commitment1,
-		"scalar": strconv.Itoa(scalar),
+		"scalar":     strconv.Itoa(scalar),
 	}
-	data,err := json.Marshal(expData)
+	data, err := json.Marshal(expData)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,9 +280,25 @@ func TestExp(t *testing.T) {
 
 	cipherExp := resMap["ciphertext"]
 	t.Logf("exponentiation of ciphertext1 and %d: %s\n", scalar, cipherExp)
-	expRes,err :=  PaillierDec(cipherExp, prvkey)
+	expRes, err := PaillierDec(cipherExp, prvkey)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Logf("decrypted cipherExp: %s\n", expRes.String())
+}
+
+func TestKeyDestroy(t *testing.T) {
+	err, isRemoved := DestroyPrvKey(path, "654321", pubkey)
+	if err == nil || isRemoved == true {
+		t.Fatal("not supposed to destroy the private key")
+	}
+
+	err, isRemoved = DestroyPrvKey(path, password, pubkey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if isRemoved == false {
+		t.Fatal("failed to destroy the private key")
+	}
+	t.Logf("private key destroyed")
 }

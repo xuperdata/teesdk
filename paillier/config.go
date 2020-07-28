@@ -1,5 +1,5 @@
 package paillier
 
 type PaillierConfig struct {
-	Enable   bool           `yaml:"enable"`
+	Enable bool `yaml:"enable"`
 }

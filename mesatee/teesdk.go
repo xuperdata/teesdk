@@ -1,7 +1,7 @@
 package mesatee
 
 /*
-#cgo CFLAGS: -I${SRCDIR} 
+#cgo CFLAGS: -I${SRCDIR}
 #cgo LDFLAGS: -L ${SRCDIR}/lib -lmesatee_sdk_c -Wl,-rpath=${SRCDIR}/lib
 
 #include "include/mesatee.h"
@@ -96,58 +96,58 @@ import (
 )
 
 type TEEClient struct {
-    Uid                *C.char
-    Token              *C.char
-    PublicDer          *C.char
-    SignSha256	       *C.char
-    EnclaveInfoConfig  *C.char
-    TMSPort            C.int32_t
-    TDFSPort           C.int32_t
+	Uid               *C.char
+	Token             *C.char
+	PublicDer         *C.char
+	SignSha256        *C.char
+	EnclaveInfoConfig *C.char
+	TMSPort           C.int32_t
+	TDFSPort          C.int32_t
 }
 
 // env_loggecr can be init once, so single instance patten is adapted
 var kInstance *TEEClient
 var once sync.Once
+
 func NewTEEClient(uid, token, pd, ss, eic string, tmsport int32) *TEEClient {
 	if kInstance != nil {
 		return kInstance
 	}
 	once.Do(func() {
 		kInstance = &TEEClient{
-		    Uid:                C.CString(uid),
-		    Token:              C.CString(token),
-		    PublicDer:          C.CString(pd),
-		    SignSha256:         C.CString(ss),
-		    EnclaveInfoConfig:  C.CString(eic),
-		    TMSPort:			C.int32_t(tmsport),
+			Uid:               C.CString(uid),
+			Token:             C.CString(token),
+			PublicDer:         C.CString(pd),
+			SignSha256:        C.CString(ss),
+			EnclaveInfoConfig: C.CString(eic),
+			TMSPort:           C.int32_t(tmsport),
 		}
 		s := kInstance
 		C.init(s.PublicDer, s.SignSha256, s.EnclaveInfoConfig, s.TMSPort)
-		})
+	})
 	return kInstance
 }
 
 func (s *TEEClient) Close() {
-    C.release()
-    C.free(unsafe.Pointer(s.Uid))
-    C.free(unsafe.Pointer(s.Token))
-    C.free(unsafe.Pointer(s.PublicDer))
-    C.free(unsafe.Pointer(s.SignSha256))
-    C.free(unsafe.Pointer(s.EnclaveInfoConfig))
+	C.release()
+	C.free(unsafe.Pointer(s.Uid))
+	C.free(unsafe.Pointer(s.Token))
+	C.free(unsafe.Pointer(s.PublicDer))
+	C.free(unsafe.Pointer(s.SignSha256))
+	C.free(unsafe.Pointer(s.EnclaveInfoConfig))
 }
 
 func (s *TEEClient) Submit(method string, cipher string) (string, error) {
-     cMethod, cArgs := C.CString(method), C.CString(cipher)
-     defer C.free(unsafe.Pointer(cMethod))
-     defer C.free(unsafe.Pointer(cArgs))
-     // error handler TODO
-     var output *C.char
-     var outputSize C.size_t
-     ret := C.submit_task(cMethod, cArgs, s.Uid, s.Token, &output, &outputSize)
-     if ret != 0 {
-	return "", errors.New("submit_task error, return nil")
-     }
-     defer C.free(unsafe.Pointer(output))
-     return C.GoStringN(output, C.int(outputSize)), nil
+	cMethod, cArgs := C.CString(method), C.CString(cipher)
+	defer C.free(unsafe.Pointer(cMethod))
+	defer C.free(unsafe.Pointer(cArgs))
+	// error handler TODO
+	var output *C.char
+	var outputSize C.size_t
+	ret := C.submit_task(cMethod, cArgs, s.Uid, s.Token, &output, &outputSize)
+	if ret != 0 {
+		return "", errors.New("submit_task error, return nil")
+	}
+	defer C.free(unsafe.Pointer(output))
+	return C.GoStringN(output, C.int(outputSize)), nil
 }
-
