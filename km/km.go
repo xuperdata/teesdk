@@ -1,3 +1,7 @@
+/*
+  This file includes functions for key management.
+  Specifically, it includes bds management using secret sharing.
+*/
 package km
 
 import (
