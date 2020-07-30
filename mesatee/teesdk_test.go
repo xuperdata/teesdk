@@ -161,6 +161,29 @@ func TestBdsMulAdmins(t *testing.T) {
 	}
 	t.Logf("bds pieces destroyed")
 }
+// test bds management with multiple admins in malicious mode
+func TestBdsMulAdminsMalicious(t *testing.T) {
+	piecesNum := 5
+	threshold := 3
+	bds := GenBds(256)
+	t.Log(bds)
+	sk := getPrivateKey()
+	piecesWithHmac, err := GenBdsPiecesWithHmac(sk, bds, piecesNum, threshold)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(piecesWithHmac)
+	// retrieve bds from pieces
+	bdsRetrieved, err := LoadBdsFromPiecesHmac(sk, piecesWithHmac)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(bdsRetrieved)
+	if bdsRetrieved != bds {
+		t.Fatal("retrieved wrong bds")
+	}
+	t.Log("successfully retrieved bds")
+}
 
 // test key derivation
 func TestKeyMint(t *testing.T) {

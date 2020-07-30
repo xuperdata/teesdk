@@ -3,6 +3,7 @@ package mesatee
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
@@ -117,4 +118,44 @@ func DestroyBds(path string, r, s *big.Int, pubkey *ecdsa.PublicKey) (error, boo
 		return fmt.Errorf("failed to destroy bds"), false
 	}
 	return nil, true
+}
+
+// generate pieces with hmac for integrity verification
+// pieces[i] = piece_i || hmac(prvkey, piece_i)
+func GenBdsPiecesWithHmac(prvkey *ecdsa.PrivateKey, bds string, piecesNum, threshold int) ([]string, error) {
+	pieces, err := account.SplitPrivateKey(bds, piecesNum, threshold)
+	if err != nil {
+		return nil, err
+	}
+	for i:=0;i<len(pieces); i++ {
+		mac := hmac.New(sha256.New, prvkey.D.Bytes())
+		mac.Write([]byte(pieces[i]))
+		res := hex.EncodeToString(mac.Sum(nil))
+		fmt.Printf("i: %d, res: %s\n", i, res)
+		pieces[i] = pieces[i] + res
+	}
+	return pieces, nil
+}
+
+// recover bds from pieces with hmac
+// we need to verify hmac first, collect correct pieces and discard wrong piece
+func LoadBdsFromPiecesHmac(prvkey *ecdsa.PrivateKey, pieces []string) (string, error) {
+	var piecesCorrect []string
+	for i:=0;i<len(pieces);i++ {
+		if VerifyPieceHmac(prvkey, pieces[i]) == true {
+			pieceLen := len(pieces[i]) - 64
+			piecesCorrect = append(piecesCorrect, pieces[i][:pieceLen])
+		}
+	}
+	return account.RetrievePrivateKeyByShares(piecesCorrect)
+}
+
+// verify hmac of a bds piece, return true if the piece is correct
+func VerifyPieceHmac(prvkey *ecdsa.PrivateKey, piece string) bool {
+	pieceReceived := piece[:len(piece)-64]
+	macReceived := piece[len(piece)-64:]
+	mac := hmac.New(sha256.New, prvkey.D.Bytes())
+	mac.Write([]byte(pieceReceived))
+	res := hex.EncodeToString(mac.Sum(nil))
+	return macReceived == res
 }
