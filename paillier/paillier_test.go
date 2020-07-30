@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/xuperdata/teesdk/utils"
+	"github.com/xuperdata/teesdk/km"
 )
 
 var (
@@ -78,7 +78,7 @@ func TestKeyGen(t *testing.T) {
 	}
 	prvkey = resMap["privateKey"]
 	pubkey = resMap["publicKey"]
-	utils.SavePrvKey(path, password, prvkey)
+	km.SavePrvKey(path, password, prvkey)
 	t.Logf("private key: %s\n", prvkey)
 	t.Logf("public key: %s\n", pubkey)
 }

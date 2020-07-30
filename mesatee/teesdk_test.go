@@ -17,6 +17,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/xuperdata/teesdk/km"
 )
 
 const basePath = "/root/mesatee-core-standalone/release"
@@ -74,13 +76,13 @@ var (
 // test bds management with single admin
 func TestBdsSingleAdmin(t *testing.T) {
 	t.Log("Test bds with Single Manager")
-	bds := GenBds(256)
+	bds := km.GenBds(256)
 	t.Log(bds)
-	err := SaveBds(bds, bdsPath, bdsPwd)
+	err := km.SaveBds(bds, bdsPath, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
-	bdsLoad, err := LoadBdsFromFile(bdsPath, bdsPwd)
+	bdsLoad, err := km.LoadBdsFromFile(bdsPath, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +93,7 @@ func TestBdsSingleAdmin(t *testing.T) {
 	sk := getPrivateKey()
 	hash := sha256.Sum256([]byte(bdsPath))
 	r, s, err := ecdsa.Sign(rand.Reader, sk, hash[:])
-	err, isRemoved := DestroyBds(bdsPath, r, s, &sk.PublicKey)
+	err, isRemoved := km.DestroyBds(bdsPath, r, s, &sk.PublicKey)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -105,16 +107,16 @@ func TestBdsSingleAdmin(t *testing.T) {
 func TestBdsMulAdmins(t *testing.T) {
 	piecesNum := 5
 	threshold := 3
-	bds := GenBds(256)
+	bds := km.GenBds(256)
 	t.Log(bds)
-	bdsPieces, err := GenBdsPieces(bds, piecesNum, threshold)
+	bdsPieces, err := km.GenBdsPieces(bds, piecesNum, threshold)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// save pieces to file
 	for i := 0; i < piecesNum; i++ {
 		path := "./bds_" + strconv.Itoa(i+1)
-		err := SaveBds(bdsPieces[i], path, bdsPwd)
+		err := km.SaveBds(bdsPieces[i], path, bdsPwd)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -122,22 +124,22 @@ func TestBdsMulAdmins(t *testing.T) {
 	// load pieces from file
 	var pieces [3]string
 	path := "./bds_1"
-	pieces[0], err = LoadBdsFromFile(path, bdsPwd)
+	pieces[0], err = km.LoadBdsFromFile(path, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
 	path = "./bds_3"
-	pieces[1], err = LoadBdsFromFile(path, bdsPwd)
+	pieces[1], err = km.LoadBdsFromFile(path, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
 	path = "./bds_5"
-	pieces[2], err = LoadBdsFromFile(path, bdsPwd)
+	pieces[2], err = km.LoadBdsFromFile(path, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
 	// retrieve bds from pieces
-	bdsRetrieved, err := LoadBdsFromPieces(pieces[:])
+	bdsRetrieved, err := km.LoadBdsFromPieces(pieces[:])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +153,7 @@ func TestBdsMulAdmins(t *testing.T) {
 		path = "./bds_" + strconv.Itoa(i+1)
 		hash := sha256.Sum256([]byte(path))
 		r, s, err := ecdsa.Sign(rand.Reader, sk, hash[:])
-		err, isRemoved := DestroyBds(path, r, s, &sk.PublicKey)
+		err, isRemoved := km.DestroyBds(path, r, s, &sk.PublicKey)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -165,16 +167,15 @@ func TestBdsMulAdmins(t *testing.T) {
 func TestBdsMulAdminsMalicious(t *testing.T) {
 	piecesNum := 5
 	threshold := 3
-	bds := GenBds(256)
+	bds := km.GenBds(256)
 	t.Log(bds)
 	sk := getPrivateKey()
-	piecesWithHmac, err := GenBdsPiecesWithHmac(sk, bds, piecesNum, threshold)
+	piecesWithHmac, err := km.GenBdsPiecesWithHmac(sk, bds, piecesNum, threshold)
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(piecesWithHmac)
 	// retrieve bds from pieces
-	bdsRetrieved, err := LoadBdsFromPiecesHmac(sk, piecesWithHmac)
+	bdsRetrieved, err := km.LoadBdsFromPiecesHmac(sk, piecesWithHmac)
 	if err != nil {
 		t.Fatal(err)
 	}

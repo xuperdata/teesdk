@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/xuperdata/teesdk/utils"
+	"github.com/xuperdata/teesdk/km"
 )
 
 type FuncCaller struct {
@@ -124,7 +124,7 @@ func DestroyPrvKey(path, password, pubkey string) (error, bool) {
 	if path == "" {
 		return nil, true
 	}
-	prvStr, err := utils.ReadPrvKey(path, password)
+	prvStr, err := km.ReadPrvKey(path, password)
 	if err != nil {
 		return err, false
 	}

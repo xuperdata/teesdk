@@ -8,8 +8,8 @@ import (
 	"math/big"
 	"sync"
 
+	"github.com/xuperdata/teesdk/km"
 	"github.com/xuperdata/teesdk/paillier/xchain_plugin/pb"
-	"github.com/xuperdata/teesdk/utils"
 )
 
 type PaillierClient struct{}
@@ -126,7 +126,7 @@ func PaillierDecToMap(caller FuncCaller) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unmarshal args error: %v", err)
 	}
-	prvkey, err := utils.ReadPrvKey(params.PrvkeyPath, params.Password)
+	prvkey, err := km.ReadPrvKey(params.PrvkeyPath, params.Password)
 	if err != nil {
 		return "", fmt.Errorf("import private key error: %v", err)
 	}
