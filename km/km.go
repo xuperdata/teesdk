@@ -116,17 +116,17 @@ func LoadBdsFromFile(path, password string) (string, error) {
 }
 
 /*******  manage bds with multiple admins using secret sharing  *******/
-// given secret bds, generate bds pieces
-func GenBdsPieces(bds string, piecesNum, threshold int) ([]string, error) {
-	return account.SplitPrivateKey(bds, piecesNum, threshold)
+// given secret bds, generate bds shares
+func GenBdsShares(bds string, sharesNum, threshold int) ([]string, error) {
+	return account.SplitPrivateKey(bds, sharesNum, threshold)
 }
 
-// retrieve bds from enough pieces
-func LoadBdsFromPieces(pieces []string) (string, error) {
-	return account.RetrievePrivateKeyByShares(pieces)
+// retrieve bds from enough shares
+func LoadBdsFromShares(shares []string) (string, error) {
+	return account.RetrievePrivateKeyByShares(shares)
 }
 
-// remove bds or bds piece from disk, only owner can destroy the bds
+// remove bds or bds share from disk, only owner can destroy the bds
 func DestroyBds(path string, r, s *big.Int, pubkey *ecdsa.PublicKey) (error, bool) {
 	// check signature of admin
 	hash := sha256.Sum256([]byte(path))
@@ -145,41 +145,41 @@ func DestroyBds(path string, r, s *big.Int, pubkey *ecdsa.PublicKey) (error, boo
 	return nil, true
 }
 
-// generate pieces with hmac for integrity verification
-// pieces[i] = piece_i || hmac(prvkey, piece_i)
-func GenBdsPiecesWithHmac(prvkey *ecdsa.PrivateKey, bds string, piecesNum, threshold int) ([]string, error) {
-	pieces, err := account.SplitPrivateKey(bds, piecesNum, threshold)
+// generate shares with hmac for integrity verification
+// shares[i] = share_i || hmac(prvkey, share_i)
+func GenBdsSharesWithHmac(prvkey *ecdsa.PrivateKey, bds string, sharesNum, threshold int) ([]string, error) {
+	shares, err := account.SplitPrivateKey(bds, sharesNum, threshold)
 	if err != nil {
 		return nil, err
 	}
-	for i:=0;i<len(pieces); i++ {
+	for i:=0;i<len(shares); i++ {
 		mac := hmac.New(sha256.New, prvkey.D.Bytes())
-		mac.Write([]byte(pieces[i]))
+		mac.Write([]byte(shares[i]))
 		res := hex.EncodeToString(mac.Sum(nil))
-		pieces[i] = pieces[i] + res
+		shares[i] = shares[i] + res
 	}
-	return pieces, nil
+	return shares, nil
 }
 
-// recover bds from pieces with hmac
-// we need to verify hmac first, collect correct pieces and discard wrong piece
-func LoadBdsFromPiecesHmac(prvkey *ecdsa.PrivateKey, pieces []string) (string, error) {
-	var piecesCorrect []string
-	for i:=0;i<len(pieces);i++ {
-		if VerifyPieceHmac(prvkey, pieces[i]) == true {
-			pieceLen := len(pieces[i]) - 64
-			piecesCorrect = append(piecesCorrect, pieces[i][:pieceLen])
+// recover bds from shares with hmac
+// we need to verify hmac first, collect correct shares and discard wrong share
+func LoadBdsFromSharesHmac(prvkey *ecdsa.PrivateKey, shares []string) (string, error) {
+	var sharesCorrect []string
+	for i:=0;i<len(shares);i++ {
+		if VerifyShareHmac(prvkey, shares[i]) == true {
+			shareLen := len(shares[i]) - 64
+			sharesCorrect = append(sharesCorrect, shares[i][:shareLen])
 		}
 	}
-	return account.RetrievePrivateKeyByShares(piecesCorrect)
+	return account.RetrievePrivateKeyByShares(sharesCorrect)
 }
 
-// verify hmac of a bds piece, return true if the piece is correct
-func VerifyPieceHmac(prvkey *ecdsa.PrivateKey, piece string) bool {
-	pieceReceived := piece[:len(piece)-64]
-	macReceived := piece[len(piece)-64:]
+// verify hmac of a bds share, return true if the share is correct
+func VerifyShareHmac(prvkey *ecdsa.PrivateKey, share string) bool {
+	shareReceived := share[:len(share)-64]
+	macReceived := share[len(share)-64:]
 	mac := hmac.New(sha256.New, prvkey.D.Bytes())
-	mac.Write([]byte(pieceReceived))
+	mac.Write([]byte(shareReceived))
 	res := hex.EncodeToString(mac.Sum(nil))
 	return macReceived == res
 }

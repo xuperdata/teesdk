@@ -105,41 +105,41 @@ func TestBdsSingleAdmin(t *testing.T) {
 
 // test bds management with multiple admins
 func TestBdsMulAdmins(t *testing.T) {
-	piecesNum := 5
+	sharesNum := 5
 	threshold := 3
 	bds := km.GenBds(256)
 	t.Log(bds)
-	bdsPieces, err := km.GenBdsPieces(bds, piecesNum, threshold)
+	bdsShares, err := km.GenBdsShares(bds, sharesNum, threshold)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// save pieces to file
-	for i := 0; i < piecesNum; i++ {
+	// save shares to file
+	for i := 0; i < sharesNum; i++ {
 		path := "./bds_" + strconv.Itoa(i+1)
-		err := km.SaveBds(bdsPieces[i], path, bdsPwd)
+		err := km.SaveBds(bdsShares[i], path, bdsPwd)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	// load pieces from file
-	var pieces [3]string
+	// load shares from file
+	var shares [3]string
 	path := "./bds_1"
-	pieces[0], err = km.LoadBdsFromFile(path, bdsPwd)
+	shares[0], err = km.LoadBdsFromFile(path, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
 	path = "./bds_3"
-	pieces[1], err = km.LoadBdsFromFile(path, bdsPwd)
+	shares[1], err = km.LoadBdsFromFile(path, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
 	path = "./bds_5"
-	pieces[2], err = km.LoadBdsFromFile(path, bdsPwd)
+	shares[2], err = km.LoadBdsFromFile(path, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// retrieve bds from pieces
-	bdsRetrieved, err := km.LoadBdsFromPieces(pieces[:])
+	// retrieve bds from shares
+	bdsRetrieved, err := km.LoadBdsFromShares(shares[:])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,9 +147,9 @@ func TestBdsMulAdmins(t *testing.T) {
 		t.Fatal("retrieved wrong bds")
 	}
 	t.Log("successfully retrieved bds")
-	// destroy bds pieces
+	// destroy bds shares
 	sk := getPrivateKey()
-	for i := 0; i < piecesNum; i++ {
+	for i := 0; i < sharesNum; i++ {
 		path = "./bds_" + strconv.Itoa(i+1)
 		hash := sha256.Sum256([]byte(path))
 		r, s, err := ecdsa.Sign(rand.Reader, sk, hash[:])
@@ -161,21 +161,21 @@ func TestBdsMulAdmins(t *testing.T) {
 			t.Logf("failed to destroy bds_%d\n", i+1)
 		}
 	}
-	t.Logf("bds pieces destroyed")
+	t.Logf("bds shares destroyed")
 }
 // test bds management with multiple admins in malicious mode
 func TestBdsMulAdminsMalicious(t *testing.T) {
-	piecesNum := 5
+	sharesNum := 5
 	threshold := 3
 	bds := km.GenBds(256)
 	t.Log(bds)
 	sk := getPrivateKey()
-	piecesWithHmac, err := km.GenBdsPiecesWithHmac(sk, bds, piecesNum, threshold)
+	sharesWithHmac, err := km.GenBdsSharesWithHmac(sk, bds, sharesNum, threshold)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// retrieve bds from pieces
-	bdsRetrieved, err := km.LoadBdsFromPiecesHmac(sk, piecesWithHmac)
+	// retrieve bds from shares
+	bdsRetrieved, err := km.LoadBdsFromSharesHmac(sk, sharesWithHmac)
 	if err != nil {
 		t.Fatal(err)
 	}
