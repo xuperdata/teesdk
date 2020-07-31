@@ -33,6 +33,24 @@ func TestReadPrvKey(t *testing.T) {
 	}
 }
 
+func TestKeyDestroy(t *testing.T) {
+	path := "./test.key"
+	password := "123456"
+	err, isRemoved := DestroySecret(path, "654321")
+	if err == nil || isRemoved {
+		t.Fatal("not supposed to destroy the private key")
+	}
+
+	err, isRemoved = DestroySecret(path, password)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !isRemoved {
+		t.Fatal("failed to destroy the private key")
+	}
+	t.Logf("private key destroyed")
+}
+
 func TestSaveBds(t *testing.T) {
 	bds := "91116513514782453972094334385061412725609779292736304247441591947503997353352"
 	path := "./bds_test"
@@ -57,4 +75,17 @@ func TestLoadBdsFromFile(t *testing.T) {
 	if bds != "91116513514782453972094334385061412725609779292736304247441591947503997353352" {
 		t.Fatalf("loaded wrong bds")
 	}
+}
+
+func TestBdsDestroy(t *testing.T) {
+	path := "./bds_test"
+	password := "123456"
+	err, isRemoved := DestroySecret(path, password)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !isRemoved {
+		t.Fatal("failed to destroy bds")
+	}
+	t.Logf("bds destroyed")
 }

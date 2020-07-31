@@ -6,8 +6,6 @@ package mesatee
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -90,10 +88,7 @@ func TestBdsSingleAdmin(t *testing.T) {
 		t.Fatal("loaded bds is not equal to the original bds")
 	}
 	// destroy bds
-	sk := getPrivateKey()
-	hash := sha256.Sum256([]byte(bdsPath))
-	r, s, err := ecdsa.Sign(rand.Reader, sk, hash[:])
-	err, isRemoved := km.DestroyBds(bdsPath, r, s, &sk.PublicKey)
+	err, isRemoved := km.DestroySecret(bdsPath, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,12 +143,9 @@ func TestBdsMulAdmins(t *testing.T) {
 	}
 	t.Log("successfully retrieved bds")
 	// destroy bds shares
-	sk := getPrivateKey()
 	for i := 0; i < sharesNum; i++ {
 		path = "./bds_" + strconv.Itoa(i+1)
-		hash := sha256.Sum256([]byte(path))
-		r, s, err := ecdsa.Sign(rand.Reader, sk, hash[:])
-		err, isRemoved := km.DestroyBds(path, r, s, &sk.PublicKey)
+		err, isRemoved := km.DestroySecret(path, bdsPwd)
 		if err != nil {
 			t.Fatal(err)
 		}

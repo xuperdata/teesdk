@@ -4,10 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math/big"
-	"os"
 	"strings"
-
-	"github.com/xuperdata/teesdk/km"
 )
 
 type FuncCaller struct {
@@ -117,34 +114,4 @@ func CipherFromString(cipher64 string) (*big.Int, error) {
 		return nil, fmt.Errorf("decode ciphertext error: %v", err)
 	}
 	return new(big.Int).SetBytes(data), nil
-}
-
-// remove private key from disk, only owner can destroy the private key
-func DestroyPrvKey(path, password, pubkey string) (error, bool) {
-	if path == "" {
-		return nil, true
-	}
-	prvStr, err := km.LoadSecretFromFile(path, password)
-	if err != nil {
-		return err, false
-	}
-	prvkey, err := PrivateFromString(prvStr)
-	if err != nil {
-		return fmt.Errorf("not authorized to destroy the private key"), false
-	}
-	pub, err := PublicFromString(pubkey)
-	if err != nil {
-		return err, false
-	}
-	if prvkey.N.Cmp(pub.N) != 0 {
-		return fmt.Errorf("not authorized to destroy the private key"), false
-	}
-	err = os.Remove(path)
-	if err != nil {
-		return err, false
-	}
-	if _, err := os.Stat(path); os.IsExist(err) {
-		return fmt.Errorf("failed to destroy the private key"), false
-	}
-	return nil, true
 }

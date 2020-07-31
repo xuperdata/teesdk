@@ -95,6 +95,31 @@ func BytesPKCS5UnPadding(originalData []byte) ([]byte, error) {
 	return originalData[:(dataLength - unpadLength)], nil
 }
 
+// remove secret file from disk, only owner can destroy the bds
+func DestroySecret(path string, password string) (error, bool) {
+	cipherMac, err := ioutil.ReadFile(path)
+	if err != nil {
+		return err, false
+	}
+	cipherLen := len(cipherMac) - 32
+	ciphertext := cipherMac[:cipherLen]
+	macOrig := cipherMac[cipherLen:]
+
+	// verify mac
+	realKey := sha256.Sum256([]byte(password))
+	mac := sha256.Sum256(append(realKey[:], ciphertext...))
+	if !reflect.DeepEqual(mac[:], macOrig) {
+		return fmt.Errorf("not authorized to destroy secret file"), false
+	}
+
+	// remove file from disk
+	err = os.Remove(path)
+	if err != nil {
+		return err, false
+	}
+	return nil, true
+}
+
 /*****************   manage bds with single admin   *****************/
 // randomly generate a bds between [0, 2^len]
 func GenBds(len int64) string {
@@ -136,25 +161,6 @@ func GenBdsShares(bds string, sharesNum, threshold int) ([]string, error) {
 // retrieve bds from enough shares
 func LoadBdsFromShares(shares []string) (string, error) {
 	return account.RetrievePrivateKeyByShares(shares)
-}
-
-// remove bds or bds share from disk, only owner can destroy the bds
-func DestroyBds(path string, r, s *big.Int, pubkey *ecdsa.PublicKey) (error, bool) {
-	// check signature of admin
-	hash := sha256.Sum256([]byte(path))
-	isAuthorized := ecdsa.Verify(pubkey, hash[:], r, s)
-	if !isAuthorized {
-		return fmt.Errorf("not authorized to destroy bds"), false
-	}
-	// remove bds file from disk
-	err := os.Remove(path)
-	if err != nil {
-		return err, false
-	}
-	if _, err := os.Stat(path); os.IsExist(err) {
-		return fmt.Errorf("failed to destroy bds"), false
-	}
-	return nil, true
 }
 
 // generate shares with hmac for integrity verification
