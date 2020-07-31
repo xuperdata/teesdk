@@ -12,8 +12,6 @@
 
 4、将ciphertext和mac值一同存储在本地文件中
 
-![image-20200731105804303](/Users/wanghongyan01/Library/Application Support/typora-user-images/image-20200731105804303.png)
-
 #### 二、私钥恢复过程
 
 1、从本地读取ciphertext和mac值
