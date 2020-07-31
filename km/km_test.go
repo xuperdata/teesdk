@@ -12,7 +12,7 @@ func TestSavePrvKey(t *testing.T) {
 	path := "./test.key"
 	password := "123456"
 	prvkey := "ea07ded1156e152ef8615661581cf73495c33b431f3fbe372f57370dc80b375b"
-	err := SavePrvKey(path, password, prvkey)
+	err := SaveSecretToFile(path, password, prvkey)
 	if err != nil {
 		t.Fatalf("failed to save private key: %v", err)
 	}
@@ -24,7 +24,7 @@ func TestSavePrvKey(t *testing.T) {
 func TestReadPrvKey(t *testing.T) {
 	path := "./test.key"
 	password := "123456"
-	prvkey, err := ReadPrvKey(path, password)
+	prvkey, err := LoadSecretFromFile(path, password)
 	if err != nil {
 		t.Fatalf("failed to load private key: %v", err)
 	}

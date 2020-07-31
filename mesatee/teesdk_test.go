@@ -97,7 +97,7 @@ func TestBdsSingleAdmin(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if isRemoved != true {
+	if !isRemoved {
 		t.Fatal("failed to destroy bds")
 	}
 	t.Logf("bds destroyed")
@@ -157,7 +157,7 @@ func TestBdsMulAdmins(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if isRemoved != true {
+		if !isRemoved {
 			t.Logf("failed to destroy bds_%d\n", i+1)
 		}
 	}

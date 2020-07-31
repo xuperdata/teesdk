@@ -50,7 +50,7 @@ func PrivateToString(key *PrivateKey) string {
 
 func PrivateFromString(data64 string) (*PrivateKey, error) {
 	contain := strings.Contains(data64, ",")
-	if contain != true {
+	if !contain {
 		return nil, fmt.Errorf("decode private key error: illegal format")
 	}
 	pq64 := strings.Split(data64, ",")
@@ -124,7 +124,7 @@ func DestroyPrvKey(path, password, pubkey string) (error, bool) {
 	if path == "" {
 		return nil, true
 	}
-	prvStr, err := km.ReadPrvKey(path, password)
+	prvStr, err := km.LoadSecretFromFile(path, password)
 	if err != nil {
 		return err, false
 	}

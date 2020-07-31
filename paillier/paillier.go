@@ -99,7 +99,7 @@ func PaillierEncToMap(caller FuncCaller) (string, error) {
 		return "", fmt.Errorf("unmarshal args error: %v", err)
 	}
 	msg, v := new(big.Int).SetString(params.Message, 10)
-	if v != true {
+	if !v {
 		return "", fmt.Errorf("set message to big int error")
 	}
 	cipher, err := PaillierEnc(msg, params.PublicKey)
@@ -126,7 +126,7 @@ func PaillierDecToMap(caller FuncCaller) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("unmarshal args error: %v", err)
 	}
-	prvkey, err := km.ReadPrvKey(params.PrvkeyPath, params.Password)
+	prvkey, err := km.LoadSecretFromFile(params.PrvkeyPath, params.Password)
 	if err != nil {
 		return "", fmt.Errorf("import private key error: %v", err)
 	}
@@ -160,14 +160,14 @@ func PaillierMulToMap(caller FuncCaller) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("check commitment1 error: %v", err)
 	}
-	if v != true {
+	if !v {
 		return "", errors.New("not authorized to use ciphertext1")
 	}
 	v, err = CheckCommitment(params.Ciphertext2, caller.Address, params.Commitment2)
 	if err != nil {
 		return "", fmt.Errorf("check commitment2 error: %v", err)
 	}
-	if v != true {
+	if !v {
 		return "", errors.New("not authorized to use ciphertext2")
 	}
 
@@ -200,12 +200,12 @@ func PaillierExpToMap(caller FuncCaller) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("check commitment error: %v", err)
 	}
-	if v != true {
+	if !v {
 		return "", errors.New("not authorized to use ciphertext")
 	}
 
 	scalarInput, v := new(big.Int).SetString(params.Scalar, 10)
-	if v != true {
+	if !v {
 		return "", fmt.Errorf("set scalar to big int error")
 	}
 	cipher, err := PaillierExp(params.PublicKey, params.Ciphertext, scalarInput)

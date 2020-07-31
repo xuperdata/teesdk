@@ -78,7 +78,7 @@ func TestKeyGen(t *testing.T) {
 	}
 	prvkey = resMap["privateKey"]
 	pubkey = resMap["publicKey"]
-	km.SavePrvKey(path, password, prvkey)
+	km.SaveSecretToFile(path, password, prvkey)
 	t.Logf("private key: %s\n", prvkey)
 	t.Logf("public key: %s\n", pubkey)
 }
@@ -289,7 +289,7 @@ func TestExp(t *testing.T) {
 
 func TestKeyDestroy(t *testing.T) {
 	err, isRemoved := DestroyPrvKey(path, "654321", pubkey)
-	if err == nil || isRemoved == true {
+	if err == nil || isRemoved {
 		t.Fatal("not supposed to destroy the private key")
 	}
 
@@ -297,7 +297,7 @@ func TestKeyDestroy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if isRemoved == false {
+	if !isRemoved {
 		t.Fatal("failed to destroy the private key")
 	}
 	t.Logf("private key destroyed")

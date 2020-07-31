@@ -17,59 +17,29 @@ import (
 	"io/ioutil"
 	"math/big"
 	"os"
+	"reflect"
 
 	"github.com/xuperchain/crypto/core/account"
 )
 
-// load secret from file and decrypt using password
-func ReadPrvKey(path string, password string) (string, error) {
-	// read ciphertext from file
-	ciphertext, err := ioutil.ReadFile(path)
-	if err != nil {
-		return "", fmt.Errorf("import private key error: %v", err)
-	}
-
-	realKey := sha256.Sum256([]byte(password))
-	block, err := aes.NewCipher(realKey[:])
-	if err != nil {
-		return "", fmt.Errorf("get aes new cipher error: %v", err)
-	}
-	blockSize := block.BlockSize()
-	blockModeD := cipher.NewCBCDecrypter(block, realKey[:blockSize])
-	prvkey := make([]byte, len(ciphertext))
-	blockModeD.CryptBlocks(prvkey, ciphertext)
-
-	prvkey, err = BytesPKCS5UnPadding(prvkey)
-	if err != nil {
-		return "", err
-	}
-	return string(prvkey), nil
-}
-
-func BytesPKCS5UnPadding(originalData []byte) ([]byte, error) {
-	dataLength := len(originalData)
-	unpadLength := int(originalData[dataLength-1])
-	if dataLength <= unpadLength {
-		return nil, fmt.Errorf("wrong password")
-	}
-	return originalData[:(dataLength - unpadLength)], nil
-}
-
-// encrypt secret using password and save ciphertext to file
-func SavePrvKey(path string, password string, prvkey string) error {
-	// ciphertext = aesEnc(hash(pwd), prvkey)
+// encrypt secret using password and save ciphertext and mac to file
+func SaveSecretToFile(path string, password string, serect string) error {
+	// ciphertext = aesEnc(hash(pwd), secret)
 	realKey := sha256.Sum256([]byte(password))
 	block, err := aes.NewCipher(realKey[:])
 	if err != nil {
 		return fmt.Errorf("get aes new cipher error: %v", err)
 	}
 	blockSize := block.BlockSize()
-	originalData := BytesPKCS5Padding([]byte(prvkey), blockSize)
+	originalData := BytesPKCS5Padding([]byte(serect), blockSize)
 	blockMode := cipher.NewCBCEncrypter(block, realKey[:blockSize])
 	ciphertext := make([]byte, len(originalData))
 	blockMode.CryptBlocks(ciphertext, originalData)
 
-	err = ioutil.WriteFile(path, ciphertext, 0666)
+	// mac = sha256(realKey||cipher)
+	mac := sha256.Sum256(append(realKey[:], ciphertext...))
+
+	err = ioutil.WriteFile(path, append(ciphertext, mac[:]...), 0666)
 	if err != nil {
 		return fmt.Errorf("Export private key file failed, the err is %v", err)
 	}
@@ -82,17 +52,50 @@ func BytesPKCS5Padding(cipherData []byte, blockSize int) []byte {
 	return append(cipherData, padData...)
 }
 
-
-/*****************   manage bds with single admin   *****************/
-// encrypt bds with password and save it to file
-func SaveBds(bds, path, password string) error {
-	err := SavePrvKey(path, password, bds)
+// load ciphertext from file, verify mac and decrypt ciphertext using password
+func LoadSecretFromFile(path string, password string) (string, error) {
+	// read ciphertext and mac from file
+	cipherMac, err := ioutil.ReadFile(path)
 	if err != nil {
-		return err
+		return "", fmt.Errorf("import private key error: %v", err)
 	}
-	return nil
+	cipherLen := len(cipherMac) - 32
+	ciphertext := cipherMac[:cipherLen]
+	macOrig := cipherMac[cipherLen:]
+
+	// verify mac
+	realKey := sha256.Sum256([]byte(password))
+	mac := sha256.Sum256(append(realKey[:], ciphertext...))
+	if !reflect.DeepEqual(mac[:], macOrig) {
+		return "", fmt.Errorf("secret integrity check failed")
+	}
+
+	block, err := aes.NewCipher(realKey[:])
+	if err != nil {
+		return "", fmt.Errorf("get aes new cipher error: %v", err)
+	}
+	blockSize := block.BlockSize()
+	blockModeD := cipher.NewCBCDecrypter(block, realKey[:blockSize])
+	secret := make([]byte, len(ciphertext))
+	blockModeD.CryptBlocks(secret, ciphertext)
+
+	secret, err = BytesPKCS5UnPadding(secret)
+	if err != nil {
+		return "", err
+	}
+	return string(secret), nil
 }
 
+func BytesPKCS5UnPadding(originalData []byte) ([]byte, error) {
+	dataLength := len(originalData)
+	unpadLength := int(originalData[dataLength-1])
+	if dataLength <= unpadLength {
+		return nil, fmt.Errorf("wrong password")
+	}
+	return originalData[:(dataLength - unpadLength)], nil
+}
+
+/*****************   manage bds with single admin   *****************/
 // randomly generate a bds between [0, 2^len]
 func GenBds(len int64) string {
 	max := new(big.Int).Exp(new(big.Int).SetInt64(2), new(big.Int).SetInt64(len), nil)
@@ -106,9 +109,18 @@ func GenBds(len int64) string {
 	return bds.String()
 }
 
+// encrypt bds with password and save it to file
+func SaveBds(bds, path, password string) error {
+	err := SaveSecretToFile(path, password, bds)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // load bds from file and decrypt bds using password
 func LoadBdsFromFile(path, password string) (string, error) {
-	bds, err := ReadPrvKey(path, password)
+	bds, err := LoadSecretFromFile(path, password)
 	if err != nil {
 		return "", err
 	}
@@ -131,7 +143,7 @@ func DestroyBds(path string, r, s *big.Int, pubkey *ecdsa.PublicKey) (error, boo
 	// check signature of admin
 	hash := sha256.Sum256([]byte(path))
 	isAuthorized := ecdsa.Verify(pubkey, hash[:], r, s)
-	if isAuthorized != true {
+	if !isAuthorized {
 		return fmt.Errorf("not authorized to destroy bds"), false
 	}
 	// remove bds file from disk
@@ -166,7 +178,7 @@ func GenBdsSharesWithHmac(prvkey *ecdsa.PrivateKey, bds string, sharesNum, thres
 func LoadBdsFromSharesHmac(prvkey *ecdsa.PrivateKey, shares []string) (string, error) {
 	var sharesCorrect []string
 	for i:=0;i<len(shares);i++ {
-		if VerifyShareHmac(prvkey, shares[i]) == true {
+		if VerifyShareHmac(prvkey, shares[i]) {
 			shareLen := len(shares[i]) - 64
 			sharesCorrect = append(sharesCorrect, shares[i][:shareLen])
 		}
