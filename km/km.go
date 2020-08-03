@@ -136,20 +136,12 @@ func GenBds(len int64) string {
 
 // encrypt bds with password and save it to file
 func SaveBds(bds, path, password string) error {
-	err := SaveSecretToFile(path, password, bds)
-	if err != nil {
-		return err
-	}
-	return nil
+	return SaveSecretToFile(path, password, bds)
 }
 
 // load bds from file and decrypt bds using password
 func LoadBdsFromFile(path, password string) (string, error) {
-	bds, err := LoadSecretFromFile(path, password)
-	if err != nil {
-		return "", err
-	}
-	return bds, nil
+	return LoadSecretFromFile(path, password)
 }
 
 /*******  manage bds with multiple admins using secret sharing  *******/
