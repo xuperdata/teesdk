@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/xuperdata/teesdk/utils"
+	"github.com/xuperdata/teesdk/km"
 )
 
 var (
@@ -78,7 +78,7 @@ func TestKeyGen(t *testing.T) {
 	}
 	prvkey = resMap["privateKey"]
 	pubkey = resMap["publicKey"]
-	utils.SavePrvKey(path, password, prvkey)
+	km.SaveSecretToFile(path, password, prvkey)
 	t.Logf("private key: %s\n", prvkey)
 	t.Logf("public key: %s\n", pubkey)
 }
@@ -186,6 +186,7 @@ func TestDec(t *testing.T) {
 		t.Fatal(err)
 	}
 	plain := resMap["plaintext"]
+	km.DestroySecret(path, password)
 	t.Logf("decrypted ciphertext1: %s\n", plain)
 }
 
@@ -285,20 +286,4 @@ func TestExp(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("decrypted cipherExp: %s\n", expRes.String())
-}
-
-func TestKeyDestroy(t *testing.T) {
-	err, isRemoved := DestroyPrvKey(path, "654321", pubkey)
-	if err == nil || isRemoved == true {
-		t.Fatal("not supposed to destroy the private key")
-	}
-
-	err, isRemoved = DestroyPrvKey(path, password, pubkey)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if isRemoved == false {
-		t.Fatal("failed to destroy the private key")
-	}
-	t.Logf("private key destroyed")
 }

@@ -1,6 +1,8 @@
 ## bds管理方案
 
-在联盟网络中，超级管理员拥有bds的所属权和使用权。该文档给出了超级管理员对bds管理的技术方案，主要思路是利用秘密共享(secret sharing)对bds进行分片管理，考虑参诚实模型和恶意模型两种情况。这里假设有N个参与方，阈值为T。
+在联盟网络中，超级管理员拥有bds的所属权和使用权。该文档给出了超级管理员对bds管理的技术方案。
+
+对于管理员自己管理bds的情况，和[Paillier私钥管理方案](../paillier/key_management_zh.md)相同。本方案主要给出如何利用秘密共享(secret sharing)对bds进行分片管理，考虑参诚实模型和恶意模型两种情况。这里假设有N个参与方，阈值为T。
 
 #### 一、诚实模型
 
@@ -26,19 +28,19 @@ bds恢复过程如下：
 
 ```sequence
 Admin->Admin: bds
-Admin->Admin: {Piece1...PieceN}
+Admin->Admin: {share1...shareN}
 Note left of Admin: distribution
-Admin->P1: Enc_p1(Piece1)
-Admin->P2: Enc_p2(Piece2)
-Admin->P3: Enc_p3(Piece3)
+Admin->P1: Enc_p1(share1)
+Admin->P2: Enc_p2(share2)
+Admin->P3: Enc_p3(share3)
 Admin->...:
-Admin->PN: Enc_pN(PieceN)
+Admin->PN: Enc_pN(shareN)
 Note left of Admin: Retrieval
-P1->Admin: Enc_admin(Piece1)
-P2->Admin: Enc_admin(Piece2)
-P3->Admin: Enc_admin(Piece3)
+P1->Admin: Enc_admin(share1)
+P2->Admin: Enc_admin(share2)
+P3->Admin: Enc_admin(share3)
 ...->Admin:
-PN->Admin: Enc_admin(PieceM)
+PN->Admin: Enc_admin(shareM)
 Admin->Admin: recover bds
 ```
 
@@ -56,7 +58,7 @@ bds分发过程如下：
 
 2、管理员将bds拆分为N个分片
 
-3、管理员对N个分片分别计算HMAC(Prvkey, Piece)，并将结果拼接到分片末尾
+3、管理员对N个分片分别计算HMAC(Prvkey, share)，并将结果拼接到分片末尾
 
 4、利用N个参与方的公钥分别对N个分片进行加密
 
@@ -74,22 +76,22 @@ bds恢复过程如下：
 
 ```sequence
 Admin->Admin: bds
-Admin->Admin: {Piece1...PieceN}
+Admin->Admin: {share1...shareN}
 Admin->Admin: {HMAC1...HMACN}
-Admin->Admin: {Piece1|HMAC1...PieceN|HMACN}
+Admin->Admin: {share1|HMAC1...shareN|HMACN}
 Note left of Admin: distribution
-Admin->P1: Enc_p1(Piece1|HMAC1)
-Admin->P2: Enc_p2(Piece2|HMAC2)
-Admin->P3: Enc_p3(Piece3|HMAC3)
+Admin->P1: Enc_p1(share1|HMAC1)
+Admin->P2: Enc_p2(share2|HMAC2)
+Admin->P3: Enc_p3(share3|HMAC3)
 Admin->...:
-Admin->PN: Enc_pN(PieceN|HMACN)
+Admin->PN: Enc_pN(shareN|HMACN)
 Note left of Admin: retrieval
-P1->Admin: Enc_admin(Piece1|HMAC1)
-P2->Admin: Enc_admin(Piece2|HMAC2)
-P3->Admin: Enc_admin(Piece3|HMAC3)
+P1->Admin: Enc_admin(share1|HMAC1)
+P2->Admin: Enc_admin(share2|HMAC2)
+P3->Admin: Enc_admin(share3|HMAC3)
 ...->Admin: 
-PN->Admin: Enc_admin(PieceN|HMACN)
-Admin->Admin: {Piece1|HMAC1...PieceN|HMACN}
+PN->Admin: Enc_admin(shareN|HMACN)
+Admin->Admin: {share1|HMAC1...shareN|HMACN}
 Admin->Admin: check HMAC
 Admin->Admin: recover bds
 ```

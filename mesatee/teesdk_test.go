@@ -6,8 +6,6 @@ package mesatee
 import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
-	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -17,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/xuperdata/teesdk/km"
 )
 
 const basePath = "/root/mesatee-core-standalone/release"
@@ -74,13 +74,13 @@ var (
 // test bds management with single admin
 func TestBdsSingleAdmin(t *testing.T) {
 	t.Log("Test bds with Single Manager")
-	bds := GenBds(256)
+	bds := km.GenBds(256)
 	t.Log(bds)
-	err := SaveBds(bds, bdsPath, bdsPwd)
+	err := km.SaveBds(bds, bdsPath, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
-	bdsLoad, err := LoadBdsFromFile(bdsPath, bdsPwd)
+	bdsLoad, err := km.LoadBdsFromFile(bdsPath, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -88,14 +88,11 @@ func TestBdsSingleAdmin(t *testing.T) {
 		t.Fatal("loaded bds is not equal to the original bds")
 	}
 	// destroy bds
-	sk := getPrivateKey()
-	hash := sha256.Sum256([]byte(bdsPath))
-	r, s, err := ecdsa.Sign(rand.Reader, sk, hash[:])
-	err, isRemoved := DestroyBds(bdsPath, r, s, &sk.PublicKey)
+	err, isRemoved := km.DestroySecret(bdsPath, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if isRemoved != true {
+	if !isRemoved {
 		t.Fatal("failed to destroy bds")
 	}
 	t.Logf("bds destroyed")
@@ -103,41 +100,41 @@ func TestBdsSingleAdmin(t *testing.T) {
 
 // test bds management with multiple admins
 func TestBdsMulAdmins(t *testing.T) {
-	piecesNum := 5
+	sharesNum := 5
 	threshold := 3
-	bds := GenBds(256)
+	bds := km.GenBds(256)
 	t.Log(bds)
-	bdsPieces, err := GenBdsPieces(bds, piecesNum, threshold)
+	bdsShares, err := km.GenBdsShares(bds, sharesNum, threshold)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// save pieces to file
-	for i := 0; i < piecesNum; i++ {
+	// save shares to file
+	for i := 0; i < sharesNum; i++ {
 		path := "./bds_" + strconv.Itoa(i+1)
-		err := SaveBds(bdsPieces[i], path, bdsPwd)
+		err := km.SaveBds(bdsShares[i], path, bdsPwd)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	// load pieces from file
-	var pieces [3]string
+	// load shares from file
+	var shares [3]string
 	path := "./bds_1"
-	pieces[0], err = LoadBdsFromFile(path, bdsPwd)
+	shares[0], err = km.LoadBdsFromFile(path, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
 	path = "./bds_3"
-	pieces[1], err = LoadBdsFromFile(path, bdsPwd)
+	shares[1], err = km.LoadBdsFromFile(path, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
 	path = "./bds_5"
-	pieces[2], err = LoadBdsFromFile(path, bdsPwd)
+	shares[2], err = km.LoadBdsFromFile(path, bdsPwd)
 	if err != nil {
 		t.Fatal(err)
 	}
-	// retrieve bds from pieces
-	bdsRetrieved, err := LoadBdsFromPieces(pieces[:])
+	// retrieve bds from shares
+	bdsRetrieved, err := km.LoadBdsFromShares(shares[:])
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -145,21 +142,40 @@ func TestBdsMulAdmins(t *testing.T) {
 		t.Fatal("retrieved wrong bds")
 	}
 	t.Log("successfully retrieved bds")
-	// destroy bds pieces
-	sk := getPrivateKey()
-	for i := 0; i < piecesNum; i++ {
+	// destroy bds shares
+	for i := 0; i < sharesNum; i++ {
 		path = "./bds_" + strconv.Itoa(i+1)
-		hash := sha256.Sum256([]byte(path))
-		r, s, err := ecdsa.Sign(rand.Reader, sk, hash[:])
-		err, isRemoved := DestroyBds(path, r, s, &sk.PublicKey)
+		err, isRemoved := km.DestroySecret(path, bdsPwd)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if isRemoved != true {
+		if !isRemoved {
 			t.Logf("failed to destroy bds_%d\n", i+1)
 		}
 	}
-	t.Logf("bds pieces destroyed")
+	t.Logf("bds shares destroyed")
+}
+// test bds management with multiple admins in malicious mode
+func TestBdsMulAdminsMalicious(t *testing.T) {
+	sharesNum := 5
+	threshold := 3
+	bds := km.GenBds(256)
+	t.Log(bds)
+	sk := getPrivateKey()
+	sharesWithHmac, err := km.GenBdsSharesWithHmac(sk, bds, sharesNum, threshold)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// retrieve bds from shares
+	bdsRetrieved, err := km.LoadBdsFromSharesHmac(sk, sharesWithHmac)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(bdsRetrieved)
+	if bdsRetrieved != bds {
+		t.Fatal("retrieved wrong bds")
+	}
+	t.Log("successfully retrieved bds")
 }
 
 // test key derivation
